@@ -1,13 +1,13 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useDarkMode } from "../hooks/useDarkMode";
 
-// ── Data kosakata SIBI (dummy — ganti dengan fetch API) ───────
 const VOCABULARY = [
   {
     id: 1,
     name: "Saya",
     description: "Tempelkan ibu jari ke dada bagian tengah",
     category: "Kosakata",
-    image: null, // nanti: URL gambar isyarat
+    image: null,
   },
   {
     id: 2,
@@ -90,7 +90,6 @@ const VOCABULARY = [
 
 const FILTERS = ["Semua", "Alfabet", "Kosakata"];
 
-// ── Gradien thumbnail per id (variasi warna) ──────────────────
 const THUMB_GRADIENTS = [
   "linear-gradient(135deg, #6366F1 0%, #3B82F6 100%)",
   "linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)",
@@ -103,7 +102,6 @@ function getGradient(id) {
   return THUMB_GRADIENTS[id % THUMB_GRADIENTS.length];
 }
 
-// ── Komponen thumbnail ────────────────────────────────────────
 function Thumbnail({ item }) {
   if (item.image) {
     return (
@@ -114,13 +112,12 @@ function Thumbnail({ item }) {
       />
     );
   }
-  // Placeholder saat gambar belum ada
+
   return (
     <div
       className="w-full h-full flex items-center justify-center"
       style={{ background: getGradient(item.id) }}
     >
-      {/* Ikon play — ganti <img> saat gambar isyarat tersedia */}
       <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
         <svg
           viewBox="0 0 24 24"
@@ -134,8 +131,7 @@ function Thumbnail({ item }) {
   );
 }
 
-// ── Ikon bintang favorit ──────────────────────────────────────
-function StarIcon({ filled }) {
+function StarIcon({ filled, dk }) {
   return filled ? (
     <svg
       viewBox="0 0 24 24"
@@ -147,7 +143,7 @@ function StarIcon({ filled }) {
   ) : (
     <svg
       viewBox="0 0 24 24"
-      className="w-5 h-5 text-neutral-300"
+      className={`w-5 h-5 ${dk.textHint}`}
       fill="none"
       stroke="currentColor"
       strokeWidth={1.8}
@@ -161,65 +157,63 @@ function StarIcon({ filled }) {
   );
 }
 
-// ── Kartu kosakata ────────────────────────────────────────────
-function VocabCard({ item, isFavorite, onToggleFavorite, onPress }) {
+function VocabCard({ item, dk, isFavorite, onToggleFavorite, onPress }) {
   return (
     <div
-      className="
-        bg-white rounded-2xl border border-neutral-100 shadow-sm
-        flex items-center gap-3 p-3
-        active:scale-[0.98] transition-transform duration-150 cursor-pointer
-      "
       onClick={onPress}
+      className={`
+        ${dk.card}
+        rounded-2xl border shadow-sm flex items-center gap-3 p-3
+        active:scale-[0.98] transition-transform duration-150 cursor-pointer
+      `}
     >
-      {/* Thumbnail */}
       <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
         <Thumbnail item={item} />
       </div>
 
-      {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-neutral-800 text-base leading-tight truncate">
+        <p
+          className={`font-bold ${dk.textPrimary} text-base leading-tight truncate`}
+        >
           {item.name}
         </p>
-        <p className="text-neutral-500 text-xs mt-0.5 leading-snug line-clamp-1">
+
+        <p
+          className={`${dk.textSecondary} text-xs mt-0.5 leading-snug line-clamp-1`}
+        >
           {item.description}
         </p>
-        {/* Badge kategori */}
+
         <span
-          className="
-          inline-block mt-1.5 text-[10px] font-semibold
-          bg-primary-50 text-primary-600
-          px-2 py-0.5 rounded-full
-        "
+          className={`inline-block mt-1.5 text-[10px] font-semibold ${dk.badge} px-2 py-0.5 rounded-full`}
         >
           {item.category}
         </span>
       </div>
 
-      {/* Tombol favorit */}
       <button
         onClick={(e) => {
           e.stopPropagation();
           onToggleFavorite(item.id);
         }}
-        className="flex-shrink-0 p-1.5 rounded-full transition-colors active:bg-yellow-50"
+        className="flex-shrink-0 p-1.5 rounded-full transition-colors active:scale-95"
         aria-label={isFavorite ? "Hapus dari favorit" : "Tambah ke favorit"}
       >
-        <StarIcon filled={isFavorite} />
+        <StarIcon filled={isFavorite} dk={dk} />
       </button>
     </div>
   );
 }
 
-// ── Empty state ───────────────────────────────────────────────
-function EmptyState({ query }) {
+function EmptyState({ query, dk }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-3">
-      <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center">
+      <div
+        className={`w-16 h-16 rounded-full ${dk.cardInner} border flex items-center justify-center`}
+      >
         <svg
           viewBox="0 0 24 24"
-          className="w-8 h-8 text-neutral-300"
+          className={`w-8 h-8 ${dk.textHint}`}
           fill="none"
           stroke="currentColor"
           strokeWidth={1.5}
@@ -229,13 +223,15 @@ function EmptyState({ query }) {
           <path d="m21 21-4.35-4.35" />
         </svg>
       </div>
-      <p className="text-neutral-500 text-sm font-medium text-center">
+
+      <p className={`${dk.textSecondary} text-sm font-medium text-center`}>
         {query
           ? `Tidak ada hasil untuk "${query}"`
           : "Tidak ada kosakata di kategori ini"}
       </p>
+
       {query && (
-        <p className="text-neutral-400 text-xs text-center">
+        <p className={`${dk.textMuted} text-xs text-center`}>
           Coba kata kunci yang berbeda
         </p>
       )}
@@ -243,22 +239,25 @@ function EmptyState({ query }) {
   );
 }
 
-// ── Halaman Kamus ─────────────────────────────────────────────
 export default function Dictionary() {
+  const dk = useDarkMode();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("Semua");
   const [favorites, setFavorites] = useState(new Set());
   const [selectedItem, setSelectedItem] = useState(null);
 
-  // Filter + search
   const filtered = useMemo(() => {
     return VOCABULARY.filter((v) => {
+      const keyword = searchQuery.toLowerCase().trim();
+
       const matchFilter =
         activeFilter === "Semua" || v.category === activeFilter;
       const matchSearch =
-        !searchQuery.trim() ||
-        v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.description.toLowerCase().includes(searchQuery.toLowerCase());
+        !keyword ||
+        v.name.toLowerCase().includes(keyword) ||
+        v.description.toLowerCase().includes(keyword);
+
       return matchFilter && matchSearch;
     });
   }, [searchQuery, activeFilter]);
@@ -272,8 +271,9 @@ export default function Dictionary() {
   }
 
   return (
-    <div className="flex flex-col min-h-full">
-      {/* ── HEADER ──────────────────────────────────────────── */}
+    <div
+      className={`flex flex-col min-h-full ${dk.page} transition-colors duration-300`}
+    >
       <div
         className="px-4 pt-12 pb-5"
         style={{
@@ -289,15 +289,14 @@ export default function Dictionary() {
         </p>
       </div>
 
-      {/* ── KONTEN ──────────────────────────────────────────── */}
-      <div className="flex-1 bg-neutral-50 flex flex-col">
-        {/* Search + filter — sticky */}
-        <div className="bg-neutral-50 px-4 pt-4 pb-3 flex flex-col gap-3 sticky top-0 z-10">
-          {/* Search bar */}
+      <div className={`flex-1 flex flex-col ${dk.page}`}>
+        <div
+          className={`${dk.page} px-4 pt-4 pb-3 flex flex-col gap-3 sticky top-0 z-10`}
+        >
           <div className="relative">
             <svg
               viewBox="0 0 24 24"
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-neutral-400 pointer-events-none"
+              className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none ${dk.textMuted}`}
               style={{ width: 18, height: 18 }}
               fill="none"
               stroke="currentColor"
@@ -307,24 +306,24 @@ export default function Dictionary() {
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.35-4.35" />
             </svg>
+
             <input
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari Bahasa Isyarat"
-              className="
-                w-full pl-10 pr-4 py-3 rounded-2xl border-0
-                bg-white shadow-sm text-sm text-neutral-800
-                placeholder-neutral-400 outline-none
-                focus:ring-2 focus:ring-primary-200
-                transition-all duration-200
-              "
+              className={`
+                w-full pl-10 pr-4 py-3 rounded-2xl border shadow-sm text-sm outline-none
+                focus:ring-2 focus:ring-primary-200 transition-all duration-200
+                ${dk.input}
+              `}
             />
-            {/* Clear button */}
+
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                className={`absolute right-3 top-1/2 -translate-y-1/2 ${dk.textMuted}`}
+                aria-label="Hapus pencarian"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -341,42 +340,38 @@ export default function Dictionary() {
             )}
           </div>
 
-          {/* Filter chips */}
           <div className="flex gap-2">
-            {FILTERS.map((f) => (
+            {FILTERS.map((filter) => (
               <button
-                key={f}
-                onClick={() => setActiveFilter(f)}
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
                 className={`
-                  px-4 py-1.5 rounded-full text-sm font-semibold
+                  px-4 py-1.5 rounded-full text-sm font-semibold border
                   transition-all duration-200 active:scale-95
-                  ${
-                    activeFilter === f
-                      ? "bg-primary-600 text-white shadow-sm shadow-primary-200"
-                      : "bg-white text-neutral-600 border border-neutral-200"
-                  }
+                  ${activeFilter === filter ? dk.chipActive : dk.chipIdle}
                 `}
               >
-                {f}
+                {filter}
               </button>
             ))}
 
-            {/* Badge jumlah hasil */}
-            <span className="ml-auto flex items-center text-xs text-neutral-400 font-medium pr-1">
+            <span
+              className={`ml-auto flex items-center text-xs ${dk.textMuted} font-medium pr-1`}
+            >
               {filtered.length} kata
             </span>
           </div>
         </div>
 
-        {/* List kosakata */}
         <div className="flex-1 px-4 pb-6 flex flex-col gap-3">
           {filtered.length === 0 ? (
-            <EmptyState query={searchQuery} />
+            <EmptyState query={searchQuery} dk={dk} />
           ) : (
             filtered.map((item) => (
               <VocabCard
                 key={item.id}
                 item={item}
+                dk={dk}
                 isFavorite={favorites.has(item.id)}
                 onToggleFavorite={toggleFavorite}
                 onPress={() => setSelectedItem(item)}
@@ -386,7 +381,6 @@ export default function Dictionary() {
         </div>
       </div>
 
-      {/* ── MODAL DETAIL ─────────────────────────────────────── */}
       {selectedItem && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center"
@@ -394,17 +388,14 @@ export default function Dictionary() {
           onClick={() => setSelectedItem(null)}
         >
           <div
-            className="
-              bg-white w-full max-w-mobile rounded-t-3xl px-5 pt-5 pb-10
-              animate-slide-up
-            "
+            className={`${dk.card} border w-full max-w-mobile rounded-t-3xl px-5 pt-5 pb-10`}
             onClick={(e) => e.stopPropagation()}
             style={{ animation: "slideUp .25s ease-out" }}
           >
-            {/* Handle bar */}
-            <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-5" />
+            <div
+              className={`w-10 h-1 ${dk.divider} rounded-full mx-auto mb-5`}
+            />
 
-            {/* Thumbnail besar */}
             <div className="w-full h-52 rounded-2xl overflow-hidden mb-5">
               {selectedItem.image ? (
                 <img
@@ -437,24 +428,29 @@ export default function Dictionary() {
               )}
             </div>
 
-            {/* Info detail */}
             <div className="flex items-start justify-between mb-2">
-              <h2 className="font-display font-bold text-neutral-800 text-2xl">
+              <h2
+                className={`font-display font-bold ${dk.textPrimary} text-2xl`}
+              >
                 {selectedItem.name}
               </h2>
+
               <button
                 onClick={() => toggleFavorite(selectedItem.id)}
-                className="p-2 rounded-full bg-neutral-50 active:bg-yellow-50 transition-colors"
+                className={`${dk.cardInner} border p-2 rounded-full transition-colors active:scale-95`}
+                aria-label="Toggle favorit"
               >
-                <StarIcon filled={favorites.has(selectedItem.id)} />
+                <StarIcon filled={favorites.has(selectedItem.id)} dk={dk} />
               </button>
             </div>
 
-            <span className="inline-block text-xs font-semibold bg-primary-50 text-primary-600 px-2.5 py-1 rounded-full mb-3">
+            <span
+              className={`inline-block text-xs font-semibold ${dk.badge} px-2.5 py-1 rounded-full mb-3`}
+            >
               {selectedItem.category}
             </span>
 
-            <p className="text-neutral-600 text-sm leading-relaxed">
+            <p className={`${dk.textSecondary} text-sm leading-relaxed`}>
               {selectedItem.description}
             </p>
           </div>
