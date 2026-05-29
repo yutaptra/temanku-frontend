@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import logo from "../assets/Logo TEMANKU.svg";
+import api from "../services/api";
 
 // ── Komponen input field reusable ─────────────────────────────
 function FormField({
@@ -169,27 +170,40 @@ export default function Register() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
     const validationError = validate();
     if (validationError) return setError(validationError);
 
     setIsLoading(true);
-    try {
-      // ── TODO: ganti dengan panggilan API register kamu ───────
-      // const res = await api.post("/auth/register", {
-      //   name: form.name, email: form.email, password: form.password,
-      // });
-      // dispatch({ type: "LOGIN", payload: res.data.user });
+    setError("");
 
-      // Simulasi register sukses (hapus saat integrasi API)
-      await new Promise((r) => setTimeout(r, 900));
+    try {
+      const res = await api.post("/signup", {
+        username: form.name,
+        password: form.password,
+        email: form.email,
+        phone_number: "",
+        first_name: form.name,
+        last_name: "",
+      });
+
+      console.log(res.data);
+
       dispatch({
         type: "LOGIN",
-        payload: { name: form.name, email: form.email },
+        payload: {
+          name: form.name,
+          email: form.email,
+        },
       });
+
       navigate("/home", { replace: true });
-      // ─────────────────────────────────────────────────────────
     } catch (err) {
-      setError("Pendaftaran gagal. Email mungkin sudah digunakan.");
+      console.error(err);
+
+      const message = err.response?.data?.detail || "Pendaftaran gagal.";
+
+      setError(typeof message === "string" ? message : "Pendaftaran gagal.");
     } finally {
       setIsLoading(false);
     }

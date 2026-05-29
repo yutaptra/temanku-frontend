@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-// ── Konstanta ─────────────────────────────────────────────────
 const WS_URL =
   "wss://temanku-backend-70685098724.asia-southeast2.run.app/ws/predict";
-const FRAME_INTERVAL_MS = 150; // kirim ~6-7 frame/detik
 
-// ── Status koneksi ────────────────────────────────────────────
+const FRAME_INTERVAL_MS = 300;
+
 const STATUS = {
   IDLE: "idle",
   CONNECTING: "connecting",
@@ -14,7 +13,6 @@ const STATUS = {
   ERROR: "error",
 };
 
-// ── Ikon SVG ──────────────────────────────────────────────────
 const IconCamera = ({ className }) => (
   <svg
     viewBox="0 0 24 24"
@@ -22,8 +20,6 @@ const IconCamera = ({ className }) => (
     fill="none"
     stroke="currentColor"
     strokeWidth={1.8}
-    strokeLinecap="round"
-    strokeLinejoin="round"
   >
     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
     <circle cx="12" cy="13" r="4" />
@@ -37,8 +33,6 @@ const IconTranslate = ({ className }) => (
     fill="none"
     stroke="currentColor"
     strokeWidth={1.8}
-    strokeLinecap="round"
-    strokeLinejoin="round"
   >
     <path d="M5 8l6 6M4 6h7M7 4v2" />
     <path d="M2 21l7-7" />
@@ -52,24 +46,6 @@ const IconStop = ({ className }) => (
   </svg>
 );
 
-const IconWifi = ({ className }) => (
-  <svg
-    viewBox="0 0 24 24"
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.8}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-    <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-    <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-    <circle cx="12" cy="20" r="1" fill="currentColor" />
-  </svg>
-);
-
-// ── Hook utama: kamera + WebSocket ───────────────────────────
 function useTranslation() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -80,64 +56,69 @@ function useTranslation() {
   const [status, setStatus] = useState(STATUS.IDLE);
   const [translation, setTranslation] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  const [history, setHistory] = useState([]); // riwayat terjemahan
+  const [confidence, setConfidence] = useState(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
 
-  // ── Bersihkan semua resource ────────────────────────────────
-  const cleanup = useCallback(() => {
-    // Hentikan interval pengiriman frame
+  const cleanupWebSocket = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    // Tutup WebSocket
+
     if (wsRef.current) {
-      wsRef.current.onclose = null; // hindari trigger handler
+      wsRef.current.onclose = null;
+      wsRef.current.onerror = null;
       wsRef.current.close();
       wsRef.current = null;
     }
-    // Matikan stream kamera
+  }, []);
+
+  const cleanupCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
-    // Reset video element
+
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+
+    setIsCameraActive(false);
   }, []);
 
-  // ── Kirim frame via canvas → base64 → WebSocket ─────────────
+  const cleanupAll = useCallback(() => {
+    cleanupWebSocket();
+    cleanupCamera();
+  }, [cleanupWebSocket, cleanupCamera]);
+
   const sendFrame = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ws = wsRef.current;
 
     if (!video || !canvas || !ws || ws.readyState !== WebSocket.OPEN) return;
-    if (video.readyState < 2) return; // video belum siap
+    if (video.readyState < 2) return;
 
     const ctx = canvas.getContext("2d");
-    canvas.width = video.videoWidth || 320;
-    canvas.height = video.videoHeight || 240;
 
-    // Mirror horizontal (selfie mode)
-    ctx.save();
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-    ctx.restore();
+    canvas.width = 640;
+    canvas.height = 480;
 
-    // Ambil base64 JPEG (kualitas 0.6 untuk hemat bandwidth)
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
     const base64 = canvas.toDataURL("image/jpeg", 0.6).split(",")[1];
-    ws.send(JSON.stringify({ frame: base64 }));
+
+    // Backend menerima raw base64, bukan JSON.
+    ws.send(base64);
   }, []);
 
-  // ── Mulai penerjemahan ───────────────────────────────────────
   const start = useCallback(async () => {
     setErrorMsg("");
+    setTranslation("");
+    setConfidence(null);
     setStatus(STATUS.CONNECTING);
 
     try {
-      // 1. Akses kamera — gunakan kamera default perangkat
-      // (kamera depan/webcam di laptop, kamera default di smartphone)
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1280 },
@@ -150,15 +131,9 @@ function useTranslation() {
 
       stream.getVideoTracks().forEach((track) => {
         track.onended = () => {
-          setErrorMsg("Kamera berhenti atau digunakan aplikasi lain.");
+          setErrorMsg("Kamera berhenti atau sedang digunakan aplikasi lain.");
           setStatus(STATUS.ERROR);
-          cleanup();
-        };
-
-        track.onmute = () => {
-          setErrorMsg("Kamera tidak mengirim video.");
-          setStatus(STATUS.ERROR);
-          cleanup();
+          cleanupAll();
         };
       });
 
@@ -169,46 +144,50 @@ function useTranslation() {
         await videoRef.current.play();
       }
 
-      // 2. Buka WebSocket
+      setIsCameraActive(true);
+
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
 
       ws.onopen = () => {
         setStatus(STATUS.ACTIVE);
-        // 3. Mulai kirim frame secara berkala
         intervalRef.current = setInterval(sendFrame, FRAME_INTERVAL_MS);
       };
 
-      // 4. Terima hasil prediksi dari backend
       ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
-          const text = data.hasil_teks ?? data.text ?? data.result ?? "";
-          if (text && text.trim()) {
-            setTranslation(text.trim());
-            setHistory((prev) => {
-              const entry = { id: Date.now(), text: text.trim() };
-              // Hindari duplikat berurutan
-              if (prev[0]?.text === text.trim()) return prev;
-              return [entry, ...prev].slice(0, 20); // max 20 riwayat
-            });
+          const response = JSON.parse(event.data);
+
+          const prediction = response.data?.prediction;
+          const score = response.data?.confidence;
+          const isDetected = response.data?.is_detected;
+
+          if (isDetected && prediction) {
+            setTranslation(prediction);
+            setConfidence(score ?? null);
+          } else {
+            setTranslation("");
+            setConfidence(null);
           }
         } catch {
-          // Abaikan pesan non-JSON
+          if (event.data && String(event.data).trim()) {
+            setTranslation(String(event.data).trim());
+            setConfidence(null);
+          }
         }
       };
 
       ws.onerror = () => {
-        setErrorMsg("Koneksi ke server gagal. Periksa jaringan kamu.");
+        setErrorMsg("Koneksi ke server gagal. Kamera tetap aktif.");
         setStatus(STATUS.ERROR);
-        cleanup();
+        cleanupWebSocket();
       };
 
-      ws.onclose = (e) => {
-        cleanup();
+      ws.onclose = (event) => {
+        cleanupWebSocket();
 
-        if (e.code !== 1000) {
-          setErrorMsg("Koneksi WebSocket terputus dari server.");
+        if (event.code !== 1000) {
+          setErrorMsg(`Koneksi WebSocket terputus. Code: ${event.code}`);
           setStatus(STATUS.ERROR);
         } else {
           setStatus(STATUS.IDLE);
@@ -221,73 +200,79 @@ function useTranslation() {
           : err.name === "NotFoundError"
             ? "Kamera tidak ditemukan pada perangkat ini."
             : `Gagal mengakses kamera: ${err.message}`;
+
       setErrorMsg(msg);
       setStatus(STATUS.ERROR);
-      cleanup();
+      cleanupAll();
     }
-  }, [sendFrame, cleanup, status]);
+  }, [sendFrame, cleanupWebSocket, cleanupAll]);
 
-  // ── Akhiri penerjemahan ──────────────────────────────────────
   const stop = useCallback(() => {
     setStatus(STATUS.STOPPING);
+    cleanupAll();
 
-    if (wsRef.current) {
-      wsRef.current.close(1000);
-    }
+    setTimeout(() => {
+      setStatus(STATUS.IDLE);
+      setErrorMsg("");
+      setTranslation("");
+      setConfidence(null);
+    }, 300);
+  }, [cleanupAll]);
 
-    cleanup();
-    setTimeout(() => setStatus(STATUS.IDLE), 300);
-  }, [cleanup]);
-
-  // ── Cleanup saat unmount (pindah halaman) ────────────────────
   useEffect(() => {
-    return () => cleanup();
-  }, [cleanup]);
+    return () => cleanupAll();
+  }, [cleanupAll]);
 
   return {
     videoRef,
     canvasRef,
     status,
     translation,
+    confidence,
     errorMsg,
-    history,
     start,
     stop,
+    isCameraActive,
     isActive: status === STATUS.ACTIVE,
     isLoading: status === STATUS.CONNECTING || status === STATUS.STOPPING,
   };
 }
 
-// ── Komponen indikator status ─────────────────────────────────
 function StatusBadge({ status }) {
   const config = {
     [STATUS.IDLE]: {
-      color: "bg-neutral-200 text-neutral-500",
+      color:
+        "bg-neutral-200 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300",
       dot: "bg-neutral-400",
       label: "Siap",
     },
     [STATUS.CONNECTING]: {
-      color: "bg-yellow-100 text-yellow-700",
+      color:
+        "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
       dot: "bg-yellow-400",
       label: "Menghubungkan…",
     },
     [STATUS.ACTIVE]: {
-      color: "bg-green-100 text-green-700",
+      color:
+        "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
       dot: "bg-green-500",
       label: "Live",
     },
     [STATUS.STOPPING]: {
-      color: "bg-neutral-100 text-neutral-500",
+      color:
+        "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300",
       dot: "bg-neutral-400",
       label: "Menghentikan…",
     },
     [STATUS.ERROR]: {
-      color: "bg-red-100 text-red-600",
+      color: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300",
       dot: "bg-red-500",
       label: "Error",
     },
   };
+
   const c = config[status] ?? config[STATUS.IDLE];
+
   return (
     <span
       className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${c.color}`}
@@ -300,24 +285,26 @@ function StatusBadge({ status }) {
   );
 }
 
-// ── Halaman Terjemah ──────────────────────────────────────────
 export default function Translate() {
   const {
     videoRef,
     canvasRef,
     status,
     translation,
+    confidence,
     errorMsg,
-    history,
     start,
     stop,
+    isCameraActive,
     isActive,
     isLoading,
   } = useTranslation();
 
+  const confidencePercent =
+    typeof confidence === "number" ? Math.round(confidence * 100) : null;
+
   return (
-    <div className="flex flex-col min-h-full">
-      {/* ── HEADER ──────────────────────────────────────────── */}
+    <div className="flex flex-col min-h-full bg-neutral-50 dark:bg-neutral-950 transition-colors duration-300">
       <div
         className="px-4 pt-12 pb-5"
         style={{
@@ -333,154 +320,150 @@ export default function Translate() {
         </p>
       </div>
 
-      {/* ── KONTEN ──────────────────────────────────────────── */}
-      <div className="flex-1 bg-neutral-50 px-4 py-4 flex flex-col gap-4">
-        {/* Card utama kamera */}
-        <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-          {/* Header card */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-50">
-            <div className="flex items-center gap-2 text-primary-600">
+      <div className="flex-1 px-4 py-4 flex flex-col gap-4">
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden transition-colors duration-300">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
+            <div className="flex items-center gap-2 text-primary-600 dark:text-blue-400">
               <IconCamera className="w-4 h-4" />
-              <span className="text-sm font-semibold text-primary-600">
+              <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 Terjemah dari Bahasa Isyarat ke Teks
               </span>
             </div>
+
             <StatusBadge status={status} />
           </div>
 
-          {/* Viewport kamera */}
-          <div
-            className="relative w-full bg-neutral-900"
-            style={{ aspectRatio: "4/3" }}
-          >
-            {/* Elemen video */}
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
-                isActive ? "opacity-100" : "opacity-0"
-              }`}
-              style={{ transform: "scaleX(-1)" }} // mirror selfie
-            />
+          <div className="px-4 pt-4">
+            <div
+              className="
+                relative w-full max-w-[420px] mx-auto bg-neutral-900
+                rounded-2xl overflow-hidden
+              "
+              style={{ aspectRatio: "4/3" }}
+            >
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ transform: "scaleX(-1)" }}
+              />
 
-            {/* Canvas tersembunyi untuk capture frame */}
-            <canvas ref={canvasRef} className="hidden" />
+              <canvas ref={canvasRef} className="hidden" />
 
-            {/* Overlay saat IDLE / CONNECTING */}
-            {!isActive && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                {/* Kotak panduan tangan */}
-                <div
-                  className="relative w-44 h-28 flex items-center justify-center"
-                  style={{
-                    border: "2px dashed rgba(255,255,255,0.5)",
-                    borderRadius: 12,
-                  }}
-                >
-                  {/* Sudut kotak */}
-                  {[
-                    "top-0 left-0 border-t-2 border-l-2 rounded-tl-lg",
-                    "top-0 right-0 border-t-2 border-r-2 rounded-tr-lg",
-                    "bottom-0 left-0 border-b-2 border-l-2 rounded-bl-lg",
-                    "bottom-0 right-0 border-b-2 border-r-2 rounded-br-lg",
-                  ].map((cls, i) => (
-                    <span
-                      key={i}
-                      className={`absolute w-4 h-4 border-white ${cls}`}
-                    />
-                  ))}
+              {!isCameraActive && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                  <div
+                    className="relative w-44 h-28 flex items-center justify-center"
+                    style={{
+                      border: "2px dashed rgba(255,255,255,0.5)",
+                      borderRadius: 12,
+                    }}
+                  >
+                    {[
+                      "top-0 left-0 border-t-2 border-l-2 rounded-tl-lg",
+                      "top-0 right-0 border-t-2 border-r-2 rounded-tr-lg",
+                      "bottom-0 left-0 border-b-2 border-l-2 rounded-bl-lg",
+                      "bottom-0 right-0 border-b-2 border-r-2 rounded-br-lg",
+                    ].map((cls, i) => (
+                      <span
+                        key={i}
+                        className={`absolute w-4 h-4 border-white ${cls}`}
+                      />
+                    ))}
 
-                  {/* Ikon kamera tengah */}
-                  <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                    {isLoading ? (
-                      <svg
-                        className="animate-spin w-7 h-7 text-white"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
-                        />
-                      </svg>
-                    ) : (
-                      <IconCamera className="w-7 h-7 text-white" />
-                    )}
+                    <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                      {isLoading ? (
+                        <svg
+                          className="animate-spin w-7 h-7 text-white"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
+                          />
+                        </svg>
+                      ) : (
+                        <IconCamera className="w-7 h-7 text-white" />
+                      )}
+                    </div>
                   </div>
-                </div>
-                <p className="text-white/80 text-sm font-medium">
-                  {isLoading ? "Membuka kamera…" : "Posisikan tangan di sini"}
-                </p>
-              </div>
-            )}
 
-            {/* Overlay scanning saat ACTIVE */}
-            {isActive && (
-              <>
-                {/* Garis scan animasi */}
-                <div
-                  className="absolute left-0 right-0 h-0.5 bg-primary-400/60"
-                  style={{ animation: "scan 2s ease-in-out infinite" }}
-                />
-                {/* Badge LIVE */}
-                <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                  LIVE
+                  <p className="text-white/80 text-sm font-medium">
+                    {isLoading ? "Membuka kamera…" : "Posisikan tangan di sini"}
+                  </p>
                 </div>
-              </>
-            )}
+              )}
 
-            {/* Error overlay */}
-            {status === STATUS.ERROR && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-neutral-900/80 px-6">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-10 h-10 text-red-400"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z"
-                    clipRule="evenodd"
+              {isCameraActive && isActive && (
+                <>
+                  <div
+                    className="absolute left-0 right-0 h-0.5 bg-blue-400/70"
+                    style={{ animation: "scan 2s ease-in-out infinite" }}
                   />
-                </svg>
-                <p className="text-white text-xs text-center leading-relaxed">
-                  {errorMsg}
-                </p>
-              </div>
-            )}
+
+                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    LIVE
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
-          {/* Kotak hasil terjemahan */}
+          {errorMsg && (
+            <div className="px-4 pt-3">
+              <p className="text-xs text-red-500 dark:text-red-400 text-center leading-relaxed">
+                {errorMsg}
+              </p>
+            </div>
+          )}
+
           <div className="px-4 py-3">
             <div
               className={`
-                w-full min-h-[52px] rounded-xl border px-4 py-3
+                w-full min-h-[58px] rounded-xl border px-4 py-3
                 flex items-center transition-all duration-300
                 ${
                   translation
-                    ? "border-primary-200 bg-primary-50"
-                    : "border-neutral-200 bg-neutral-50"
+                    ? "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40"
+                    : "border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800"
                 }
               `}
             >
               {translation ? (
-                <p className="text-neutral-800 font-semibold text-base leading-snug w-full">
-                  {translation}
-                </p>
+                <div className="w-full">
+                  <p className="text-neutral-800 dark:text-neutral-100 font-semibold text-base leading-snug">
+                    {translation}
+                    {confidencePercent !== null && (
+                      <span className="ml-2 text-sm font-medium text-blue-600 dark:text-blue-400">
+                        ({confidencePercent}%)
+                      </span>
+                    )}
+                  </p>
+
+                  {confidencePercent !== null && (
+                    <div className="mt-2 w-full h-1.5 bg-blue-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                        style={{ width: `${confidencePercent}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
               ) : (
-                <p className="text-neutral-400 text-sm italic">
+                <p className="text-neutral-400 dark:text-neutral-500 text-sm italic">
                   Terjemahannya akan muncul di sini...
                 </p>
               )}
@@ -488,8 +471,7 @@ export default function Translate() {
           </div>
         </div>
 
-        {/* Tombol aksi utama */}
-        {!isActive ? (
+        {!isCameraActive ? (
           <button
             onClick={start}
             disabled={isLoading}
@@ -549,39 +531,8 @@ export default function Translate() {
             Akhiri Penerjemahan
           </button>
         )}
-
-        {/* Riwayat terjemahan */}
-        {history.length > 0 && (
-          <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-50">
-              <div className="flex items-center gap-2">
-                <IconWifi className="w-4 h-4 text-neutral-400" />
-                <span className="text-sm font-semibold text-neutral-700">
-                  Riwayat Sesi
-                </span>
-              </div>
-              <span className="text-xs text-neutral-400">
-                {history.length} kata
-              </span>
-            </div>
-            <div className="divide-y divide-neutral-50 max-h-48 overflow-y-auto scrollbar-hide">
-              {history.map((item) => (
-                <div
-                  key={item.id}
-                  className="px-4 py-2.5 flex items-center gap-3"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary-400 flex-shrink-0" />
-                  <span className="text-neutral-700 text-sm font-medium">
-                    {item.text}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Animasi garis scan CSS */}
       <style>{`
         @keyframes scan {
           0%   { top: 10%; opacity: 0; }
