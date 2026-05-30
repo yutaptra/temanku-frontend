@@ -1,186 +1,68 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDarkMode } from "../hooks/useDarkMode";
-
-const VOCABULARY = [
-  {
-    id: 1,
-    name: "Saya",
-    description: "Tempelkan ibu jari ke dada bagian tengah",
-    category: "Kosakata",
-    image: null,
-  },
-  {
-    id: 2,
-    name: "Kasih",
-    description: "Silangkan kedua lengan di depan dada",
-    category: "Kosakata",
-    image: null,
-  },
-  {
-    id: 3,
-    name: "Kamu",
-    description: "Buka telapak tangan lebar-lebar",
-    category: "Kosakata",
-    image: null,
-  },
-  {
-    id: 4,
-    name: "Makan",
-    description: "Kuncupkan ujung jari-jari tangan",
-    category: "Kosakata",
-    image: null,
-  },
-  {
-    id: 5,
-    name: "Rumah",
-    description: "Satukan ujung jari tangan kanan dan kiri",
-    category: "Kosakata",
-    image: null,
-  },
-  {
-    id: 6,
-    name: "A",
-    description: "Kepalkan tangan dengan ibu jari di samping",
-    category: "Alfabet",
-    image: null,
-  },
-  {
-    id: 7,
-    name: "B",
-    description: "Tegakkan keempat jari, ibu jari ditekuk ke dalam",
-    category: "Alfabet",
-    image: null,
-  },
-  {
-    id: 8,
-    name: "C",
-    description: "Bentuk tangan seperti huruf C",
-    category: "Alfabet",
-    image: null,
-  },
-  {
-    id: 9,
-    name: "Tolong",
-    description: "Tekan ibu jari ke telapak tangan satunya",
-    category: "Kosakata",
-    image: null,
-  },
-  {
-    id: 10,
-    name: "Terima Kasih",
-    description: "Sentuh dagu lalu arahkan tangan ke depan",
-    category: "Kosakata",
-    image: null,
-  },
-  {
-    id: 11,
-    name: "Maaf",
-    description: "Gosok kepalan tangan melingkar di dada",
-    category: "Kosakata",
-    image: null,
-  },
-  {
-    id: 12,
-    name: "D",
-    description: "Tunjuk ke atas, jari lain melingkar menyentuh ibu jari",
-    category: "Alfabet",
-    image: null,
-  },
-];
+import api from "../services/api";
 
 const FILTERS = ["Semua", "Alfabet", "Kosakata"];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const THUMB_GRADIENTS = [
-  "linear-gradient(135deg, #6366F1 0%, #3B82F6 100%)",
-  "linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)",
-  "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)",
-  "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)",
-  "linear-gradient(135deg, #4F46E5 0%, #2563EB 100%)",
-];
-
-function getGradient(id) {
-  return THUMB_GRADIENTS[id % THUMB_GRADIENTS.length];
+function getImageUrl(imageUrl) {
+  if (!imageUrl) return null;
+  if (imageUrl.startsWith("http")) return imageUrl;
+  return `${API_BASE_URL}/${imageUrl}`;
 }
 
-function Thumbnail({ item }) {
-  if (item.image) {
+function Thumbnail({ item, variant = "card" }) {
+  const isPreview = variant === "preview";
+
+  if (!item.image) {
     return (
-      <img
-        src={item.image}
-        alt={`Isyarat ${item.name}`}
-        className="w-full h-full object-cover"
-      />
+      <div className="w-full h-full flex items-center justify-center bg-primary-500">
+        <span className="text-white text-2xl font-bold">
+          {item.name?.charAt(0)}
+        </span>
+      </div>
     );
   }
 
   return (
-    <div
-      className="w-full h-full flex items-center justify-center"
-      style={{ background: getGradient(item.id) }}
-    >
-      <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-        <svg
-          viewBox="0 0 24 24"
-          className="w-5 h-5 text-white"
-          fill="currentColor"
-        >
-          <path d="M8 5.14v14l11-7-11-7z" />
-        </svg>
-      </div>
+    <img
+      src={item.image}
+      alt={`Isyarat ${item.name}`}
+      className={`w-full h-full object-center ${
+        isPreview ? "object-contain" : "object-cover"
+      }`}
+    />
+  );
+}
+
+function EmptyState({ query, dk }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16">
+      <p className={`${dk.textSecondary} text-sm font-medium text-center`}>
+        {query
+          ? `Tidak ada hasil untuk "${query}"`
+          : "Tidak ada kosakata di kategori ini"}
+      </p>
     </div>
   );
 }
 
-function StarIcon({ filled, dk }) {
-  return filled ? (
-    <svg
-      viewBox="0 0 24 24"
-      className="w-5 h-5 text-yellow-400"
-      fill="currentColor"
-    >
-      <path d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5z" />
-    </svg>
-  ) : (
-    <svg
-      viewBox="0 0 24 24"
-      className={`w-5 h-5 ${dk.textHint}`}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5z"
-      />
-    </svg>
-  );
-}
-
-function VocabCard({ item, dk, isFavorite, onToggleFavorite, onPress }) {
+function DictionaryCard({ item, dk, onClick }) {
   return (
-    <div
-      onClick={onPress}
-      className={`
-        ${dk.card}
-        rounded-2xl border shadow-sm flex items-center gap-3 p-3
-        active:scale-[0.98] transition-transform duration-150 cursor-pointer
-      `}
+    <button
+      onClick={onClick}
+      className={`${dk.card} w-full rounded-2xl border shadow-sm flex items-center gap-3 p-3 text-left active:scale-[0.98] transition-transform duration-150`}
     >
-      <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+      <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-slate-100">
         <Thumbnail item={item} />
       </div>
 
       <div className="flex-1 min-w-0">
-        <p
-          className={`font-bold ${dk.textPrimary} text-base leading-tight truncate`}
-        >
+        <h3 className={`font-bold ${dk.textPrimary} text-base truncate`}>
           {item.name}
-        </p>
+        </h3>
 
-        <p
-          className={`${dk.textSecondary} text-xs mt-0.5 leading-snug line-clamp-1`}
-        >
+        <p className={`${dk.textSecondary} text-xs mt-0.5 line-clamp-1`}>
           {item.description}
         </p>
 
@@ -190,85 +72,64 @@ function VocabCard({ item, dk, isFavorite, onToggleFavorite, onPress }) {
           {item.category}
         </span>
       </div>
-
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleFavorite(item.id);
-        }}
-        className="flex-shrink-0 p-1.5 rounded-full transition-colors active:scale-95"
-        aria-label={isFavorite ? "Hapus dari favorit" : "Tambah ke favorit"}
-      >
-        <StarIcon filled={isFavorite} dk={dk} />
-      </button>
-    </div>
-  );
-}
-
-function EmptyState({ query, dk }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 gap-3">
-      <div
-        className={`w-16 h-16 rounded-full ${dk.cardInner} border flex items-center justify-center`}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          className={`w-8 h-8 ${dk.textHint}`}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.5}
-          strokeLinecap="round"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
-      </div>
-
-      <p className={`${dk.textSecondary} text-sm font-medium text-center`}>
-        {query
-          ? `Tidak ada hasil untuk "${query}"`
-          : "Tidak ada kosakata di kategori ini"}
-      </p>
-
-      {query && (
-        <p className={`${dk.textMuted} text-xs text-center`}>
-          Coba kata kunci yang berbeda
-        </p>
-      )}
-    </div>
+    </button>
   );
 }
 
 export default function Dictionary() {
   const dk = useDarkMode();
 
+  const [dictionary, setDictionary] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("Semua");
-  const [favorites, setFavorites] = useState(new Set());
   const [selectedItem, setSelectedItem] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const filtered = useMemo(() => {
-    return VOCABULARY.filter((v) => {
-      const keyword = searchQuery.toLowerCase().trim();
+  useEffect(() => {
+    fetchDictionary();
+  }, []);
 
+  async function fetchDictionary() {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const res = await api.get("/dictionary/");
+      const list = res.data?.data || [];
+
+      const mappedData = list.map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        category: item.category,
+        image: getImageUrl(item.image_url),
+      }));
+
+      setDictionary(mappedData);
+    } catch (err) {
+      console.error(err);
+      setError("Gagal memuat data kamus.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const filteredDictionary = useMemo(() => {
+    const keyword = searchQuery.toLowerCase().trim();
+
+    return dictionary.filter((item) => {
       const matchFilter =
-        activeFilter === "Semua" || v.category === activeFilter;
+        activeFilter === "Semua" || item.category === activeFilter;
+
       const matchSearch =
         !keyword ||
-        v.name.toLowerCase().includes(keyword) ||
-        v.description.toLowerCase().includes(keyword);
+        item.name.toLowerCase().includes(keyword) ||
+        item.description.toLowerCase().includes(keyword);
 
       return matchFilter && matchSearch;
     });
-  }, [searchQuery, activeFilter]);
-
-  function toggleFavorite(id) {
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
+  }, [dictionary, searchQuery, activeFilter]);
 
   return (
     <div
@@ -281,7 +142,7 @@ export default function Dictionary() {
             "linear-gradient(160deg, #4A9BFF 0%, #2563EB 55%, #1848C8 100%)",
         }}
       >
-        <h1 className="font-display font-extrabold text-white text-2xl leading-tight">
+        <h1 className="font-display font-extrabold text-white text-2xl">
           Kamus
         </h1>
         <p className="text-blue-100 text-sm mt-0.5">
@@ -289,160 +150,87 @@ export default function Dictionary() {
         </p>
       </div>
 
-      <div className={`flex-1 flex flex-col ${dk.page}`}>
-        <div
-          className={`${dk.page} px-4 pt-4 pb-3 flex flex-col gap-3 sticky top-0 z-10`}
-        >
-          <div className="relative">
-            <svg
-              viewBox="0 0 24 24"
-              className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none ${dk.textMuted}`}
-              style={{ width: 18, height: 18 }}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              strokeLinecap="round"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
+      <div className={`${dk.page} px-4 pt-4 pb-3 sticky top-0 z-10`}>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Cari bahasa isyarat"
+          className={`w-full px-4 py-3 rounded-2xl border shadow-sm text-sm outline-none focus:ring-2 focus:ring-primary-200 ${dk.input}`}
+        />
 
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari Bahasa Isyarat"
+        <div className="flex gap-2 mt-3">
+          {FILTERS.map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
               className={`
-                w-full pl-10 pr-4 py-3 rounded-2xl border shadow-sm text-sm outline-none
-                focus:ring-2 focus:ring-primary-200 transition-all duration-200
-                ${dk.input}
+                px-4 py-1.5 rounded-full text-sm font-semibold border
+                transition-all duration-200 active:scale-95
+                ${
+                  activeFilter === filter
+                    ? dk.isDark
+                      ? "bg-primary-500 text-white border-primary-400"
+                      : "bg-white text-primary-600 border-primary-200 shadow-sm"
+                    : dk.chipIdle
+                }
               `}
-            />
-
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className={`absolute right-3 top-1/2 -translate-y-1/2 ${dk.textMuted}`}
-                aria-label="Hapus pencarian"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  style={{ width: 16, height: 16 }}
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            )}
-          </div>
-
-          <div className="flex gap-2">
-            {FILTERS.map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setActiveFilter(filter)}
-                className={`
-                  px-4 py-1.5 rounded-full text-sm font-semibold border
-                  transition-all duration-200 active:scale-95
-                  ${activeFilter === filter ? dk.chipActive : dk.chipIdle}
-                `}
-              >
-                {filter}
-              </button>
-            ))}
-
-            <span
-              className={`ml-auto flex items-center text-xs ${dk.textMuted} font-medium pr-1`}
             >
-              {filtered.length} kata
-            </span>
-          </div>
-        </div>
+              {filter}
+            </button>
+          ))}
 
-        <div className="flex-1 px-4 pb-6 flex flex-col gap-3">
-          {filtered.length === 0 ? (
-            <EmptyState query={searchQuery} dk={dk} />
-          ) : (
-            filtered.map((item) => (
-              <VocabCard
-                key={item.id}
-                item={item}
-                dk={dk}
-                isFavorite={favorites.has(item.id)}
-                onToggleFavorite={toggleFavorite}
-                onPress={() => setSelectedItem(item)}
-              />
-            ))
-          )}
+          <span
+            className={`ml-auto flex items-center text-xs ${dk.textMuted} font-medium`}
+          >
+            {filteredDictionary.length} kata
+          </span>
         </div>
+      </div>
+
+      <div className="flex-1 px-4 pb-24 flex flex-col gap-3">
+        {isLoading ? (
+          <p className={`${dk.textSecondary} text-sm text-center py-10`}>
+            Memuat data kamus...
+          </p>
+        ) : error ? (
+          <p className="text-red-500 text-sm text-center py-10">{error}</p>
+        ) : filteredDictionary.length === 0 ? (
+          <EmptyState query={searchQuery} dk={dk} />
+        ) : (
+          filteredDictionary.map((item) => (
+            <DictionaryCard
+              key={item.id}
+              item={item}
+              dk={dk}
+              onClick={() => setSelectedItem(item)}
+            />
+          ))
+        )}
       </div>
 
       {selectedItem && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center"
-          style={{ background: "rgba(0,0,0,0.45)" }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/45 px-0 sm:px-4"
           onClick={() => setSelectedItem(null)}
         >
           <div
-            className={`${dk.card} border w-full max-w-mobile rounded-t-3xl px-5 pt-5 pb-10`}
+            className={`${dk.card} border w-full sm:max-w-md md:max-w-lg rounded-t-3xl sm:rounded-3xl px-5 pt-5 pb-32 sm:pb-8 max-h-[90vh] overflow-y-auto`}
             onClick={(e) => e.stopPropagation()}
-            style={{ animation: "slideUp .25s ease-out" }}
           >
             <div
               className={`w-10 h-1 ${dk.divider} rounded-full mx-auto mb-5`}
             />
 
-            <div className="w-full h-52 rounded-2xl overflow-hidden mb-5">
-              {selectedItem.image ? (
-                <img
-                  src={selectedItem.image}
-                  alt={`Isyarat ${selectedItem.name}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center"
-                  style={{ background: getGradient(selectedItem.id) }}
-                >
-                  <div className="flex flex-col items-center gap-3 opacity-80">
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="w-16 h-16 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.2}
-                      strokeLinecap="round"
-                    >
-                      <path d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316z" />
-                      <path d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0zM18.75 10.5h.008v.008h-.008V10.5z" />
-                    </svg>
-                    <p className="text-white/70 text-sm">
-                      Gambar belum tersedia
-                    </p>
-                  </div>
-                </div>
-              )}
+            <div className="w-full h-[360px] max-h-[50vh] rounded-2xl overflow-hidden bg-slate-100 mb-5 flex items-center justify-center">
+              <Thumbnail item={selectedItem} variant="preview" />
             </div>
 
-            <div className="flex items-start justify-between mb-2">
-              <h2
-                className={`font-display font-bold ${dk.textPrimary} text-2xl`}
-              >
-                {selectedItem.name}
-              </h2>
-
-              <button
-                onClick={() => toggleFavorite(selectedItem.id)}
-                className={`${dk.cardInner} border p-2 rounded-full transition-colors active:scale-95`}
-                aria-label="Toggle favorit"
-              >
-                <StarIcon filled={favorites.has(selectedItem.id)} dk={dk} />
-              </button>
-            </div>
+            <h2
+              className={`font-display font-bold ${dk.textPrimary} text-2xl mb-2`}
+            >
+              {selectedItem.name}
+            </h2>
 
             <span
               className={`inline-block text-xs font-semibold ${dk.badge} px-2.5 py-1 rounded-full mb-3`}
@@ -450,19 +238,12 @@ export default function Dictionary() {
               {selectedItem.category}
             </span>
 
-            <p className={`${dk.textSecondary} text-sm leading-relaxed`}>
+            <p className={`${dk.textSecondary} text-sm leading-relaxed mb-8`}>
               {selectedItem.description}
             </p>
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes slideUp {
-          from { transform: translateY(100%); }
-          to   { transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }

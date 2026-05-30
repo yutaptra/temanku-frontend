@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { useDarkMode } from "../hooks/useDarkMode";
+import api from "../services/api";
 
 function getInitials(name = "") {
   return name
@@ -248,17 +249,73 @@ export default function Profile() {
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [profile, setProfile] = useState(state.user);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const user = state.user ?? {
-    name: "Yusri Afta",
-    email: "yusriafta@gmail.com",
-  };
+  const user = profile ??
+    state.user ?? {
+      name: "Pengguna",
+      email: "",
+    };
+
+  useEffect(() => {
+    async function fetchProfile() {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const res = await api.get("/profile/me");
+        const data = res.data;
+
+        const profileData =
+          data.result?.user || data.result || data.data || data.user || data;
+
+        const mappedUser = {
+          name:
+            profileData.full_name ||
+            profileData.name ||
+            profileData.first_name ||
+            state.user?.name ||
+            "Pengguna",
+          email: profileData.email || state.user?.email || "",
+          photoUrl: profileData.photo_url || profileData.avatar || null,
+          role: profileData.role || state.user?.role,
+        };
+
+        setProfile(mappedUser);
+        dispatch({ type: "SET_USER", payload: mappedUser });
+        localStorage.setItem("user", JSON.stringify(mappedUser));
+      } catch (err) {
+        console.error(err);
+
+        // Jangan logout otomatis dari halaman Profile
+        if (!err.response) {
+          setError("Gagal terhubung ke server.");
+        } else if (err.response.status === 401) {
+          setError("");
+        } else {
+          setError("Gagal memuat profil.");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchProfile();
+  }, [dispatch, state.user]);
 
   function handleSaveProfile(updated) {
-    dispatch({ type: "SET_USER", payload: { ...user, ...updated } });
+    const updatedUser = { ...user, ...updated };
+
+    setProfile(updatedUser);
+    dispatch({ type: "SET_USER", payload: updatedUser });
   }
 
   function handleLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
     dispatch({ type: "LOGOUT" });
     navigate("/", { replace: true });
   }
@@ -288,6 +345,8 @@ export default function Profile() {
           px-6 pt-10 pb-10 gap-4
         `}
       >
+        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
         <Avatar name={user.name} photoUrl={user.photoUrl} size={100} />
 
         <div className="text-center">
@@ -389,7 +448,7 @@ export default function Profile() {
         }
         @keyframes popIn {
           from { transform: scale(0.92); opacity: 0; }
-          to   { transform: scale(1);    opacity: 1; }
+          to   { transform: scale(1); opacity: 1; }
         }
       `}</style>
     </div>

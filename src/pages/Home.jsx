@@ -100,7 +100,12 @@ export default function Home() {
   const dk = useDarkMode();
 
   return (
-    <div className={`flex flex-col min-h-full transition-colors duration-300`}>
+    <div
+      className={`
+    flex flex-col min-h-full overflow-x-hidden
+    transition-colors duration-300
+  `}
+    >
       {/* Header — selalu biru, tidak berubah */}
       <div
         className="relative px-4 pt-12 pb-10"

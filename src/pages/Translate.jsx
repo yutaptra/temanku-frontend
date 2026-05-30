@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useDarkMode } from "../hooks/useDarkMode";
 
 const WS_URL =
   "wss://temanku-backend-70685098724.asia-southeast2.run.app/ws/predict";
@@ -300,11 +301,14 @@ export default function Translate() {
     isLoading,
   } = useTranslation();
 
+  const dk = useDarkMode();
   const confidencePercent =
     typeof confidence === "number" ? Math.round(confidence * 100) : null;
 
   return (
-    <div className="flex flex-col min-h-full bg-neutral-50 dark:bg-neutral-950 transition-colors duration-300">
+    <div
+      className={`flex flex-col min-h-full ${dk.page} transition-colors duration-300`}
+    >
       <div
         className="px-4 pt-12 pb-5"
         style={{
@@ -321,11 +325,17 @@ export default function Translate() {
       </div>
 
       <div className="flex-1 px-4 py-4 flex flex-col gap-4">
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden transition-colors duration-300">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
-            <div className="flex items-center gap-2 text-primary-600 dark:text-blue-400">
+        <div
+          className={`${dk.card} rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300`}
+        >
+          <div
+            className={`flex items-center justify-between px-4 py-3 border-b ${
+              dk.isDark ? "border-neutral-800" : "border-neutral-100"
+            }`}
+          >
+            <div className="flex items-center gap-2 text-primary-600">
               <IconCamera className="w-4 h-4" />
-              <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+              <span className={`text-sm font-semibold ${dk.textPrimary}`}>
                 Terjemah dari Bahasa Isyarat ke Teks
               </span>
             </div>
@@ -335,10 +345,7 @@ export default function Translate() {
 
           <div className="px-4 pt-4">
             <div
-              className="
-                relative w-full max-w-[420px] mx-auto bg-neutral-900
-                rounded-2xl overflow-hidden
-              "
+              className="relative w-full max-w-[420px] mx-auto bg-neutral-900 rounded-2xl overflow-hidden"
               style={{ aspectRatio: "4/3" }}
             >
               <video
@@ -354,77 +361,18 @@ export default function Translate() {
 
               {!isCameraActive && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <div
-                    className="relative w-44 h-28 flex items-center justify-center"
-                    style={{
-                      border: "2px dashed rgba(255,255,255,0.5)",
-                      borderRadius: 12,
-                    }}
-                  >
-                    {[
-                      "top-0 left-0 border-t-2 border-l-2 rounded-tl-lg",
-                      "top-0 right-0 border-t-2 border-r-2 rounded-tr-lg",
-                      "bottom-0 left-0 border-b-2 border-l-2 rounded-bl-lg",
-                      "bottom-0 right-0 border-b-2 border-r-2 rounded-br-lg",
-                    ].map((cls, i) => (
-                      <span
-                        key={i}
-                        className={`absolute w-4 h-4 border-white ${cls}`}
-                      />
-                    ))}
-
-                    <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                      {isLoading ? (
-                        <svg
-                          className="animate-spin w-7 h-7 text-white"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
-                          />
-                        </svg>
-                      ) : (
-                        <IconCamera className="w-7 h-7 text-white" />
-                      )}
-                    </div>
-                  </div>
-
+                  <IconCamera className="w-7 h-7 text-white" />
                   <p className="text-white/80 text-sm font-medium">
                     {isLoading ? "Membuka kamera…" : "Posisikan tangan di sini"}
                   </p>
                 </div>
-              )}
-
-              {isCameraActive && isActive && (
-                <>
-                  <div
-                    className="absolute left-0 right-0 h-0.5 bg-blue-400/70"
-                    style={{ animation: "scan 2s ease-in-out infinite" }}
-                  />
-
-                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                    LIVE
-                  </div>
-                </>
               )}
             </div>
           </div>
 
           {errorMsg && (
             <div className="px-4 pt-3">
-              <p className="text-xs text-red-500 dark:text-red-400 text-center leading-relaxed">
+              <p className="text-xs text-red-500 text-center leading-relaxed">
                 {errorMsg}
               </p>
             </div>
@@ -433,37 +381,30 @@ export default function Translate() {
           <div className="px-4 py-3">
             <div
               className={`
-                w-full min-h-[58px] rounded-xl border px-4 py-3
-                flex items-center transition-all duration-300
-                ${
-                  translation
-                    ? "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40"
-                    : "border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800"
-                }
-              `}
+              w-full min-h-[58px] rounded-xl border px-4 py-3
+              flex items-center transition-all duration-300
+              ${
+                translation
+                  ? dk.isDark
+                    ? "border-blue-800 bg-blue-950/40"
+                    : "border-blue-200 bg-blue-50"
+                  : dk.isDark
+                    ? "border-neutral-700 bg-neutral-800"
+                    : "border-neutral-200 bg-neutral-50"
+              }
+            `}
             >
               {translation ? (
-                <div className="w-full">
-                  <p className="text-neutral-800 dark:text-neutral-100 font-semibold text-base leading-snug">
-                    {translation}
-                    {confidencePercent !== null && (
-                      <span className="ml-2 text-sm font-medium text-blue-600 dark:text-blue-400">
-                        ({confidencePercent}%)
-                      </span>
-                    )}
-                  </p>
-
+                <p className={`font-semibold text-base ${dk.textPrimary}`}>
+                  {translation}
                   {confidencePercent !== null && (
-                    <div className="mt-2 w-full h-1.5 bg-blue-100 dark:bg-neutral-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                        style={{ width: `${confidencePercent}%` }}
-                      />
-                    </div>
+                    <span className="ml-2 text-sm font-medium text-blue-600">
+                      ({confidencePercent}%)
+                    </span>
                   )}
-                </div>
+                </p>
               ) : (
-                <p className="text-neutral-400 dark:text-neutral-500 text-sm italic">
+                <p className={`${dk.textMuted} text-sm italic`}>
                   Terjemahannya akan muncul di sini...
                 </p>
               )}

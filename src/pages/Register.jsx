@@ -179,7 +179,7 @@ export default function Register() {
 
     try {
       const res = await api.post("/signup", {
-        username: form.name,
+        full_name: form.name,
         password: form.password,
         email: form.email,
         phone_number: "",
@@ -187,7 +187,13 @@ export default function Register() {
         last_name: "",
       });
 
-      console.log(res.data);
+      const data = res.data;
+      console.log(data);
+
+      if (data.code === "400" || data.status === "Bad Request") {
+        setError(data.message || "Pendaftaran gagal.");
+        return;
+      }
 
       dispatch({
         type: "LOGIN",

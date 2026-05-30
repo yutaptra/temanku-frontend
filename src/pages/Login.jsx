@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import logo from "../assets/Logo TEMANKU.svg";
+import api from "../services/api";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,26 +22,62 @@ export default function Login() {
     e.preventDefault();
     setError("");
 
-    // Validasi sederhana
     if (!form.email.trim()) return setError("Email tidak boleh kosong.");
     if (!form.password) return setError("Kata sandi tidak boleh kosong.");
 
     setIsLoading(true);
-    try {
-      // ── TODO: ganti dengan panggilan API login kamu ──────────
-      // const res = await api.post("/auth/login", form);
-      // dispatch({ type: "LOGIN", payload: res.data.user });
 
-      // Simulasi login sukses (hapus saat integrasi API)
-      await new Promise((r) => setTimeout(r, 800));
+    try {
+      const res = await api.post("/login", {
+        email: form.email,
+        password: form.password,
+      });
+
+      const data = res.data;
+      console.log("LOGIN RESPONSE:", data);
+
+      if (String(data.code) !== "200") {
+        setError(data.message || "Email atau kata sandi salah.");
+        return;
+      }
+
+      const token = data.result?.access_token;
+
+      const user = {
+        id: data.result?.user?.id,
+        name: data.result?.user?.full_name,
+        email: form.email,
+        role: data.result?.user?.role,
+      };
+
+      if (!token) {
+        setError("Login berhasil, tetapi token tidak diterima dari server.");
+        return;
+      }
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
       dispatch({
         type: "LOGIN",
-        payload: { name: "Yusri Afta", email: form.email },
+        payload: user,
       });
+
       navigate("/home", { replace: true });
-      // ─────────────────────────────────────────────────────────
     } catch (err) {
-      setError("Email atau kata sandi salah. Silakan coba lagi.");
+      console.error(err);
+
+      if (!err.response) {
+        setError("Gagal terhubung ke server. Coba lagi nanti.");
+        return;
+      }
+
+      const message =
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        "Email atau kata sandi salah.";
+
+      setError(typeof message === "string" ? message : "Login gagal.");
     } finally {
       setIsLoading(false);
     }
