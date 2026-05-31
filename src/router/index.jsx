@@ -8,16 +8,15 @@ import Home from "../pages/Home";
 import Translate from "../pages/Translate";
 import Dictionary from "../pages/Dictionary";
 import Learning from "../pages/Learning";
+import Quiz from "../pages/Quiz";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
 
 export const router = createBrowserRouter([
-  // ── Auth flow (tanpa Bottom Nav) ──────────────────────────
   { path: "/", element: <WelcomeScreen /> },
   { path: "/register", element: <Register /> },
   { path: "/login", element: <Login /> },
 
-  // ── Protected App ─────────────────────────────────────────
   {
     element: <ProtectedRoute />,
     children: [
@@ -29,14 +28,14 @@ export const router = createBrowserRouter([
           { path: "/dictionary", element: <Dictionary /> },
           { path: "/learning", element: <Learning /> },
           { path: "/profile", element: <Profile /> },
-
-          // Tidak tampil di Bottom Nav
-          { path: "/settings", element: <Settings /> },
         ],
       },
+
+      // Protected, tapi tanpa AppLayout / BottomNav
+      { path: "/quiz/:id", element: <Quiz /> },
+      { path: "/settings", element: <Settings /> },
     ],
   },
 
-  // ── Fallback ──────────────────────────────────────────────
   { path: "*", element: <Navigate to="/" replace /> },
 ]);

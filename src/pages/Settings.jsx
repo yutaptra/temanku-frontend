@@ -1,5 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Bell,
+  ChevronRight,
+  CircleHelp,
+  Info,
+  Moon,
+  ShieldCheck,
+} from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useDarkMode } from "../hooks/useDarkMode";
 
@@ -18,10 +27,10 @@ function Toggle({ enabled, onChange, dk }) {
     >
       <span
         className={`
-        inline-block w-5 h-5 bg-white rounded-full shadow-md
-        transform transition-transform duration-300
-        ${enabled ? "translate-x-6" : "translate-x-0.5"}
-      `}
+          inline-block w-5 h-5 bg-white rounded-full shadow-md
+          transform transition-transform duration-300
+          ${enabled ? "translate-x-6" : "translate-x-0.5"}
+        `}
       />
     </button>
   );
@@ -44,14 +53,17 @@ function ToggleRow({
           >
             {label}
           </p>
+
           {description && (
             <p className={`${dk.textMuted} text-xs mt-0.5 leading-snug`}>
               {description}
             </p>
           )}
         </div>
+
         <Toggle enabled={enabled} onChange={onChange} dk={dk} />
       </div>
+
       {showDivider && <div className={`h-px ${dk.divider} mx-4`} />}
     </>
   );
@@ -68,9 +80,12 @@ function SectionCard({ icon, title, children, dk }) {
         >
           {icon}
         </div>
+
         <h2 className={`font-bold ${dk.textPrimary} text-base`}>{title}</h2>
       </div>
+
       <div className={`h-px ${dk.divider}`} />
+
       {children}
     </div>
   );
@@ -88,21 +103,14 @@ function MenuItem({ icon, label, onClick, showDivider = true, dk }) {
         >
           {icon}
         </div>
+
         <span className={`flex-1 ${dk.textPrimary} text-sm font-semibold`}>
           {label}
         </span>
-        <svg
-          viewBox="0 0 24 24"
-          className={`w-4 h-4 ${dk.textHint}`}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M9 18l6-6-6-6" />
-        </svg>
+
+        <ChevronRight className={`w-4 h-4 ${dk.textHint}`} />
       </button>
+
       {showDivider && <div className={`h-px ${dk.divider} mx-4`} />}
     </>
   );
@@ -123,11 +131,13 @@ function InfoModal({ title, content, onClose, dk }) {
         <h3 className={`font-display font-bold ${dk.textPrimary} text-lg mb-3`}>
           {title}
         </h3>
+
         <p
           className={`${dk.textSecondary} text-sm leading-relaxed mb-5 whitespace-pre-line`}
         >
           {content}
         </p>
+
         <button
           onClick={onClose}
           className="w-full py-3 rounded-2xl font-semibold text-white text-sm active:scale-95 transition-transform"
@@ -152,6 +162,7 @@ export default function Settings() {
     pushNotification: true,
     soundEffect: true,
   });
+
   const [modal, setModal] = useState(null);
 
   const INFO_MODALS = {
@@ -172,14 +183,16 @@ export default function Settings() {
     },
   };
 
-  const iconClass = `w-5 h-5 ${dk.isDark ? "text-primary-400" : "text-primary-600"}`;
-  const menuIconClass = `w-4.5 h-4.5 ${dk.textSecondary}`;
+  const iconClass = `w-5 h-5 ${
+    dk.isDark ? "text-primary-400" : "text-primary-600"
+  }`;
+
+  const menuIconClass = `w-[18px] h-[18px] ${dk.textSecondary}`;
 
   return (
     <div
       className={`flex flex-col min-h-full ${dk.page} transition-colors duration-300`}
     >
-      {/* Header — selalu biru */}
       <div
         className="px-4 pt-12 pb-5"
         style={{
@@ -189,48 +202,25 @@ export default function Settings() {
       >
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-blue-100 mb-3 active:opacity-70 transition-opacity"
+          className="w-10 h-10 rounded-2xl bg-white/20 text-white flex items-center justify-center mb-4 active:scale-95 transition-transform"
         >
-          <svg
-            viewBox="0 0 24 24"
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
-          <span className="text-sm font-medium">Kembali</span>
+          <ArrowLeft size={22} />
         </button>
+
         <h1 className="font-display font-extrabold text-white text-2xl leading-tight">
           Setelan
         </h1>
+
         <p className="text-blue-100 text-sm mt-0.5">
           Sistem Isyarat Bahasa Indonesia
         </p>
       </div>
 
       <div className="flex-1 px-4 pt-4 pb-10 flex flex-col gap-3">
-        {/* Notifikasi */}
         <SectionCard
           dk={dk}
           title="Notifikasi"
-          icon={
-            <svg
-              viewBox="0 0 24 24"
-              className={iconClass}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-          }
+          icon={<Bell className={iconClass} />}
         >
           <ToggleRow
             dk={dk}
@@ -241,6 +231,7 @@ export default function Settings() {
               setLocalSettings((p) => ({ ...p, pushNotification: v }))
             }
           />
+
           <ToggleRow
             dk={dk}
             label="Efek Suara"
@@ -253,23 +244,10 @@ export default function Settings() {
           />
         </SectionCard>
 
-        {/* Tampilan */}
         <SectionCard
           dk={dk}
           title="Tampilan"
-          icon={
-            <svg
-              viewBox="0 0 24 24"
-              className={iconClass}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-            </svg>
-          }
+          icon={<Moon className={iconClass} />}
         >
           <ToggleRow
             dk={dk}
@@ -281,7 +259,6 @@ export default function Settings() {
           />
         </SectionCard>
 
-        {/* Menu */}
         <div
           className={`${dk.card} rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300`}
         >
@@ -289,61 +266,18 @@ export default function Settings() {
             {
               key: "privasi",
               label: "Privasi & Keamanan",
-              icon: (
-                <svg
-                  viewBox="0 0 24 24"
-                  style={{ width: 18, height: 18 }}
-                  className={dk.textSecondary}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              ),
+              icon: <ShieldCheck className={menuIconClass} />,
             },
             {
               key: "bantuan",
               label: "Bantuan & Dukungan",
-              icon: (
-                <svg
-                  viewBox="0 0 24 24"
-                  style={{ width: 18, height: 18 }}
-                  className={dk.textSecondary}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" strokeWidth={2.5} />
-                </svg>
-              ),
+              icon: <CircleHelp className={menuIconClass} />,
             },
             {
               key: "tentang",
               label: "Tentang TEMANKU",
               last: true,
-              icon: (
-                <svg
-                  viewBox="0 0 24 24"
-                  style={{ width: 18, height: 18 }}
-                  className={dk.textSecondary}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" strokeWidth={2.5} />
-                </svg>
-              ),
+              icon: <Info className={menuIconClass} />,
             },
           ].map(({ key, label, icon, last }) => (
             <MenuItem
@@ -371,7 +305,20 @@ export default function Settings() {
         />
       )}
 
-      <style>{`@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}`}</style>
+      <style>
+        {`
+          @keyframes popIn {
+            from {
+              transform: scale(.92);
+              opacity: 0;
+            }
+            to {
+              transform: scale(1);
+              opacity: 1;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }

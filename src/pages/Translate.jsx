@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Camera, Languages, Square, LoaderCircle } from "lucide-react";
 import { useDarkMode } from "../hooks/useDarkMode";
 
 const WS_URL =
@@ -13,39 +14,6 @@ const STATUS = {
   STOPPING: "stopping",
   ERROR: "error",
 };
-
-const IconCamera = ({ className }) => (
-  <svg
-    viewBox="0 0 24 24"
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.8}
-  >
-    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-    <circle cx="12" cy="13" r="4" />
-  </svg>
-);
-
-const IconTranslate = ({ className }) => (
-  <svg
-    viewBox="0 0 24 24"
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.8}
-  >
-    <path d="M5 8l6 6M4 6h7M7 4v2" />
-    <path d="M2 21l7-7" />
-    <path d="M12 21l5-11 5 11M14.5 17h5" />
-  </svg>
-);
-
-const IconStop = ({ className }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
-    <rect x="4" y="4" width="16" height="16" rx="2" />
-  </svg>
-);
 
 function useTranslation() {
   const videoRef = useRef(null);
@@ -109,7 +77,6 @@ function useTranslation() {
 
     const base64 = canvas.toDataURL("image/jpeg", 0.6).split(",")[1];
 
-    // Backend menerima raw base64, bukan JSON.
     ws.send(base64);
   }, []);
 
@@ -302,6 +269,7 @@ export default function Translate() {
   } = useTranslation();
 
   const dk = useDarkMode();
+
   const confidencePercent =
     typeof confidence === "number" ? Math.round(confidence * 100) : null;
 
@@ -319,6 +287,7 @@ export default function Translate() {
         <h1 className="font-display font-extrabold text-white text-2xl leading-tight">
           Terjemah
         </h1>
+
         <p className="text-blue-100 text-sm mt-0.5">
           Sistem Isyarat Bahasa Indonesia
         </p>
@@ -334,7 +303,8 @@ export default function Translate() {
             }`}
           >
             <div className="flex items-center gap-2 text-primary-600">
-              <IconCamera className="w-4 h-4" />
+              <Camera className="w-4 h-4" />
+
               <span className={`text-sm font-semibold ${dk.textPrimary}`}>
                 Terjemah dari Bahasa Isyarat ke Teks
               </span>
@@ -345,8 +315,12 @@ export default function Translate() {
 
           <div className="px-4 pt-4">
             <div
-              className="relative w-full max-w-[420px] mx-auto bg-neutral-900 rounded-2xl overflow-hidden"
-              style={{ aspectRatio: "4/3" }}
+              className="
+                relative w-full mx-auto
+                h-[300px] sm:h-[340px] md:h-[360px]
+                max-w-[500px]
+                bg-neutral-900 rounded-2xl overflow-hidden
+              "
             >
               <video
                 ref={videoRef}
@@ -361,7 +335,8 @@ export default function Translate() {
 
               {!isCameraActive && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <IconCamera className="w-7 h-7 text-white" />
+                  <Camera className="w-7 h-7 text-white" />
+
                   <p className="text-white/80 text-sm font-medium">
                     {isLoading ? "Membuka kamera…" : "Posisikan tangan di sini"}
                   </p>
@@ -381,22 +356,23 @@ export default function Translate() {
           <div className="px-4 py-3">
             <div
               className={`
-              w-full min-h-[58px] rounded-xl border px-4 py-3
-              flex items-center transition-all duration-300
-              ${
-                translation
-                  ? dk.isDark
-                    ? "border-blue-800 bg-blue-950/40"
-                    : "border-blue-200 bg-blue-50"
-                  : dk.isDark
-                    ? "border-neutral-700 bg-neutral-800"
-                    : "border-neutral-200 bg-neutral-50"
-              }
-            `}
+                w-full min-h-[58px] rounded-xl border px-4 py-3
+                flex items-center transition-all duration-300
+                ${
+                  translation
+                    ? dk.isDark
+                      ? "border-blue-800 bg-blue-950/40"
+                      : "border-blue-200 bg-blue-50"
+                    : dk.isDark
+                      ? "border-neutral-700 bg-neutral-800"
+                      : "border-neutral-200 bg-neutral-50"
+                }
+              `}
             >
               {translation ? (
                 <p className={`font-semibold text-base ${dk.textPrimary}`}>
                   {translation}
+
                   {confidencePercent !== null && (
                     <span className="ml-2 text-sm font-medium text-blue-600">
                       ({confidencePercent}%)
@@ -423,36 +399,18 @@ export default function Translate() {
               disabled:opacity-60 disabled:active:scale-100
             "
             style={{
-              background: "linear-gradient(135deg, #3B7DFF 0%, #1A5FE8 100%)",
-              boxShadow: "0 4px 16px rgba(59,125,255,0.4)",
+              background: "linear-gradient(135deg, #3F88FF 0%, #176AC3 100%)",
+              boxShadow: "0 4px 16px rgba(23,106,195,0.4)",
             }}
           >
             {isLoading ? (
               <>
-                <svg
-                  className="animate-spin w-5 h-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
-                  />
-                </svg>
+                <LoaderCircle className="w-5 h-5 animate-spin" />
                 Menghubungkan...
               </>
             ) : (
               <>
-                <IconTranslate className="w-5 h-5" />
+                <Languages className="w-5 h-5" />
                 Mulai Penerjemahan
               </>
             )}
@@ -468,20 +426,11 @@ export default function Translate() {
             "
             style={{ boxShadow: "0 4px 16px rgba(239,68,68,0.35)" }}
           >
-            <IconStop className="w-4 h-4" />
+            <Square className="w-4 h-4 fill-current" />
             Akhiri Penerjemahan
           </button>
         )}
       </div>
-
-      <style>{`
-        @keyframes scan {
-          0%   { top: 10%; opacity: 0; }
-          10%  { opacity: 1; }
-          90%  { opacity: 1; }
-          100% { top: 90%; opacity: 0; }
-        }
-      `}</style>
     </div>
   );
 }

@@ -1,17 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Eye, EyeOff, CircleX, LoaderCircle } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import logo from "../assets/Logo TEMANKU.svg";
 import api from "../services/api";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const isDark = state.darkMode;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("session") === "expired") {
+      setError("Sesi login berakhir. Silakan masuk kembali.");
+
+      window.history.replaceState({}, "", "/");
+    }
+  }, []);
 
   function handleChange(e) {
     setError("");
@@ -34,6 +47,7 @@ export default function Login() {
       });
 
       const data = res.data;
+
       console.log("LOGIN RESPONSE:", data);
 
       if (String(data.code) !== "200") {
@@ -85,37 +99,56 @@ export default function Login() {
 
   return (
     <div
-      className="app-shell items-center justify-center"
+      className="
+      min-h-screen w-full
+      flex flex-col items-center justify-center
+      px-5 py-8 transition-colors duration-300
+    "
       style={{
-        background: "linear-gradient(180deg, #F8FAFF 0%, #F0F4FF 100%)",
+        background: isDark
+          ? "linear-gradient(180deg, #0F172A 0%, #111827 100%)"
+          : "linear-gradient(180deg, #F8FAFF 0%, #F0F4FF 100%)",
       }}
     >
-      {/* ── Logo + Nama App ─────────────────────────────────── */}
+      {/* Logo */}
       <div className="flex items-center gap-3 mb-8">
         <img
           src={logo}
           alt="Logo TEMANKU"
           className="w-14 h-14 object-contain"
         />
+
         <span
-          className="font-display font-bold text-primary-600 text-2xl"
-          style={{ letterSpacing: "0.18em" }}
+          className="font-display font-bold text-2xl"
+          style={{
+            letterSpacing: "0.18em",
+            color: isDark ? "#FFFFFF" : "#176AC3",
+          }}
         >
           TEMANKU
         </span>
       </div>
 
-      {/* ── Card Form ───────────────────────────────────────── */}
-      <div className="w-full px-5">
+      {/* Card */}
+      <div className="w-full max-w-md">
         <div
-          className="bg-white rounded-3xl px-6 py-8"
+          className={`
+          rounded-3xl px-6 py-8 transition-colors duration-300
+          ${isDark ? "bg-neutral-900" : "bg-white"}
+        `}
           style={{
-            boxShadow:
-              "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 40px -8px rgba(59,125,255,0.12)",
+            boxShadow: isDark
+              ? "0 10px 30px rgba(0,0,0,0.35)"
+              : "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 40px -8px rgba(59,125,255,0.12)",
           }}
         >
-          {/* Judul */}
-          <h1 className="text-neutral-800 font-bold text-xl text-center mb-6">
+          {/* Title */}
+          <h1
+            className={`
+              font-bold text-xl text-center mb-6
+              ${isDark ? "text-white" : "text-neutral-800"}
+            `}
+          >
             Masuk Akun
           </h1>
 
@@ -124,14 +157,18 @@ export default function Login() {
             noValidate
             className="flex flex-col gap-4"
           >
-            {/* Field Email */}
+            {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="email"
-                className="text-neutral-700 text-sm font-medium"
+                className={`
+                  text-sm font-medium
+                  ${isDark ? "text-neutral-200" : "text-neutral-700"}
+                `}
               >
                 Email
               </label>
+
               <input
                 id="email"
                 name="email"
@@ -139,25 +176,48 @@ export default function Login() {
                 autoComplete="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="contoh@email.com"
-                className="
+                placeholder="Masukkan email"
+                className={`
                   w-full px-4 py-3 rounded-xl border text-sm
-                  text-neutral-800 placeholder-neutral-300
                   outline-none transition-all duration-200
-                  border-neutral-200 bg-neutral-50
-                  focus:border-primary-400 focus:bg-white focus:ring-2 focus:ring-primary-100
-                "
+                  ${
+                    isDark
+                      ? `
+                        border-neutral-700
+                        bg-neutral-800
+                        text-white
+                        placeholder-neutral-500
+                        focus:border-primary-400
+                        focus:ring-2
+                        focus:ring-primary-500/20
+                      `
+                      : `
+                        border-neutral-200
+                        bg-neutral-50
+                        text-neutral-800
+                        placeholder-neutral-300
+                        focus:border-primary-400
+                        focus:bg-white
+                        focus:ring-2
+                        focus:ring-primary-100
+                      `
+                  }
+                `}
               />
             </div>
 
-            {/* Field Kata Sandi */}
+            {/* Password */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="password"
-                className="text-neutral-700 text-sm font-medium"
+                className={`
+                  text-sm font-medium
+                  ${isDark ? "text-neutral-200" : "text-neutral-700"}
+                `}
               >
                 Kata Sandi
               </label>
+
               <div className="relative">
                 <input
                   id="password"
@@ -167,19 +227,45 @@ export default function Login() {
                   value={form.password}
                   onChange={handleChange}
                   placeholder="Masukkan kata sandi"
-                  className="
+                  className={`
                     w-full px-4 py-3 pr-11 rounded-xl border text-sm
-                    text-neutral-800 placeholder-neutral-300
                     outline-none transition-all duration-200
-                    border-neutral-200 bg-neutral-50
-                    focus:border-primary-400 focus:bg-white focus:ring-2 focus:ring-primary-100
-                  "
+                    ${
+                      isDark
+                        ? `
+                          border-neutral-700
+                          bg-neutral-800
+                          text-white
+                          placeholder-neutral-500
+                          focus:border-primary-400
+                          focus:ring-2
+                          focus:ring-primary-500/20
+                        `
+                        : `
+                          border-neutral-200
+                          bg-neutral-50
+                          text-neutral-800
+                          placeholder-neutral-300
+                          focus:border-primary-400
+                          focus:bg-white
+                          focus:ring-2
+                          focus:ring-primary-100
+                        `
+                    }
+                  `}
                 />
-                {/* Toggle show/hide password */}
+
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+                  className={`
+                    absolute right-3 top-1/2 -translate-y-1/2 transition-colors
+                    ${
+                      isDark
+                        ? "text-neutral-500 hover:text-neutral-300"
+                        : "text-neutral-400 hover:text-neutral-600"
+                    }
+                  `}
                   aria-label={
                     showPassword
                       ? "Sembunyikan kata sandi"
@@ -187,92 +273,52 @@ export default function Login() {
                   }
                 >
                   {showPassword ? (
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
+                    <EyeOff className="w-5 h-5" strokeWidth={1.8} />
                   ) : (
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
+                    <Eye className="w-5 h-5" strokeWidth={1.8} />
                   )}
                 </button>
               </div>
             </div>
 
-            {/* Pesan error */}
+            {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-4 h-4 text-red-500 flex-shrink-0"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <p className="text-red-600 text-xs font-medium">{error}</p>
+              <div
+                className={`
+                  flex items-center gap-2 rounded-xl px-3 py-2.5 border
+                  ${
+                    isDark
+                      ? "bg-red-950/40 border-red-900"
+                      : "bg-red-50 border-red-100"
+                  }
+                `}
+              >
+                <CircleX className="w-4 h-4 text-red-500 flex-shrink-0" />
+
+                <p className="text-red-500 text-xs font-medium">{error}</p>
               </div>
             )}
 
-            {/* Tombol Masuk */}
+            {/* Button */}
             <button
               type="submit"
               disabled={isLoading}
               className="
                 w-full py-3.5 rounded-xl font-semibold text-white text-sm
                 transition-all duration-200 active:scale-95 mt-1
-                disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100
-              "
+                disabled:opacity-70 disabled:cursor-not-allowed
+                disabled:active:scale-100
+             "
               style={{
-                background: "linear-gradient(135deg, #3B7DFF 0%, #1A5FE8 100%)",
+                background: "linear-gradient(135deg, #176AC3 0%, #1F7DE3 100%)",
                 boxShadow: isLoading
                   ? "none"
-                  : "0 4px 14px rgba(59,125,255,0.4)",
+                  : "0 4px 14px rgba(23,106,195,0.4)",
               }}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg
-                    className="animate-spin w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
-                    />
-                  </svg>
+                  <LoaderCircle className="animate-spin w-4 h-4" />
                   Memproses...
                 </span>
               ) : (
@@ -281,12 +327,18 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Link ke Register */}
-          <p className="text-center text-sm text-neutral-500 mt-4">
+          {/* Register */}
+          <p
+            className={`
+              text-center text-sm mt-4
+              ${isDark ? "text-neutral-400" : "text-neutral-500"}
+            `}
+          >
             Belum punya akun?{" "}
             <Link
               to="/register"
-              className="text-primary-600 font-semibold hover:text-primary-700 transition-colors"
+              className="font-semibold transition-opacity hover:opacity-80"
+              style={{ color: "#1A81F0" }}
             >
               Daftar
             </Link>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Search, X } from "lucide-react";
 import { useDarkMode } from "../hooks/useDarkMode";
 import api from "../services/api";
 
@@ -106,7 +107,13 @@ export default function Dictionary() {
         image: getImageUrl(item.image_url),
       }));
 
-      setDictionary(mappedData);
+      const sortedData = mappedData.sort((a, b) =>
+        a.name.localeCompare(b.name, "id", {
+          sensitivity: "base",
+        }),
+      );
+
+      setDictionary(sortedData);
     } catch (err) {
       console.error(err);
       setError("Gagal memuat data kamus.");
@@ -131,6 +138,10 @@ export default function Dictionary() {
     });
   }, [dictionary, searchQuery, activeFilter]);
 
+  function closeDetail() {
+    setSelectedItem(null);
+  }
+
   return (
     <div
       className={`flex flex-col min-h-full ${dk.page} transition-colors duration-300`}
@@ -151,13 +162,28 @@ export default function Dictionary() {
       </div>
 
       <div className={`${dk.page} px-4 pt-4 pb-3 sticky top-0 z-10`}>
-        <input
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Cari bahasa isyarat"
-          className={`w-full px-4 py-3 rounded-2xl border shadow-sm text-sm outline-none focus:ring-2 focus:ring-primary-200 ${dk.input}`}
-        />
+        <div className="relative">
+          <Search
+            className={`
+      absolute left-4 top-1/2 -translate-y-1/2
+      w-4 h-4
+      ${dk.textMuted}
+    `}
+            strokeWidth={2.2}
+          />
+
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari bahasa isyarat"
+            className={`
+      w-full pl-11 pr-4 py-3 rounded-2xl border shadow-sm
+      text-sm outline-none focus:ring-2 focus:ring-primary-200
+      ${dk.input}
+    `}
+          />
+        </div>
 
         <div className="flex gap-2 mt-3">
           {FILTERS.map((filter) => (
@@ -179,12 +205,6 @@ export default function Dictionary() {
               {filter}
             </button>
           ))}
-
-          <span
-            className={`ml-auto flex items-center text-xs ${dk.textMuted} font-medium`}
-          >
-            {filteredDictionary.length} kata
-          </span>
         </div>
       </div>
 
@@ -211,34 +231,82 @@ export default function Dictionary() {
 
       {selectedItem && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/45 px-0 sm:px-4"
-          onClick={() => setSelectedItem(null)}
+          className="
+      fixed inset-0 z-50
+      flex items-center justify-center
+      bg-black/45 px-3 py-4
+    "
+          onClick={closeDetail}
         >
           <div
-            className={`${dk.card} border w-full sm:max-w-md md:max-w-lg rounded-t-3xl sm:rounded-3xl px-5 pt-5 pb-32 sm:pb-8 max-h-[90vh] overflow-y-auto`}
+            className={`
+        ${dk.card}
+        border w-full max-w-md
+        rounded-3xl
+        px-4 pt-3 pb-5
+        max-h-[92vh]
+        overflow-y-auto
+      `}
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className={`w-10 h-1 ${dk.divider} rounded-full mx-auto mb-5`}
-            />
+            <div className="relative flex items-center justify-center mb-4">
+              <div className={`w-10 h-1 ${dk.divider} rounded-full`} />
 
-            <div className="w-full h-[360px] max-h-[50vh] rounded-2xl overflow-hidden bg-slate-100 mb-5 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={closeDetail}
+                className={`
+            ${dk.cardInner}
+            absolute right-0 top-1/2 -translate-y-1/2
+            border rounded-full p-2
+            active:scale-95 transition-transform
+          `}
+                aria-label="Tutup detail kamus"
+              >
+                <X className={`w-5 h-5 ${dk.textPrimary}`} strokeWidth={2.2} />
+              </button>
+            </div>
+
+            <div
+              className="
+          w-full
+          h-[220px] sm:h-[300px]
+          rounded-2xl
+          overflow-hidden
+          bg-slate-100
+          mb-4
+          flex items-center justify-center
+        "
+            >
               <Thumbnail item={selectedItem} variant="preview" />
             </div>
 
             <h2
-              className={`font-display font-bold ${dk.textPrimary} text-2xl mb-2`}
+              className={`
+          font-display font-bold
+          ${dk.textPrimary}
+          text-2xl mb-2
+        `}
             >
               {selectedItem.name}
             </h2>
 
             <span
-              className={`inline-block text-xs font-semibold ${dk.badge} px-2.5 py-1 rounded-full mb-3`}
+              className={`
+          inline-block text-xs font-semibold
+          ${dk.badge}
+          px-2.5 py-1 rounded-full mb-3
+        `}
             >
               {selectedItem.category}
             </span>
 
-            <p className={`${dk.textSecondary} text-sm leading-relaxed mb-8`}>
+            <p
+              className={`
+          ${dk.textSecondary}
+          text-sm leading-relaxed
+        `}
+            >
               {selectedItem.description}
             </p>
           </div>

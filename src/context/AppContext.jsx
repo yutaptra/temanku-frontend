@@ -1,18 +1,31 @@
 import { createContext, useContext, useReducer, useEffect } from "react";
 
+const getDarkModeKey = (user) => {
+  if (!user?.email) return null;
+  return `temanku_dark_mode_${user.email}`;
+};
+
 function getInitialState() {
-  let savedUser = null;
+  let parsedUser = null;
   let savedToken = null;
   let savedDarkMode = false;
 
   try {
-    savedUser = localStorage.getItem("user");
+    const savedUser = localStorage.getItem("user");
     savedToken = localStorage.getItem("token");
-    savedDarkMode = localStorage.getItem("temanku_dark_mode") === "true";
+
+    if (savedUser) {
+      parsedUser = JSON.parse(savedUser);
+
+      const darkModeKey = getDarkModeKey(parsedUser);
+      if (darkModeKey) {
+        savedDarkMode = localStorage.getItem(darkModeKey) === "true";
+      }
+    }
   } catch {}
 
   return {
-    user: savedUser ? JSON.parse(savedUser) : null,
+    user: parsedUser,
     isAuthenticated: !!savedToken,
     isOnboarded: false,
     detectionResult: null,
@@ -24,26 +37,55 @@ function getInitialState() {
 
 function appReducer(state, action) {
   switch (action.type) {
-    case "LOGIN":
+    case "LOGIN": {
+      const user = action.payload;
+
+      try {
+        localStorage.setItem("user", JSON.stringify(user));
+      } catch {}
+
+      let savedDarkMode = false;
+
+      try {
+        const darkModeKey = getDarkModeKey(user);
+        if (darkModeKey) {
+          savedDarkMode = localStorage.getItem(darkModeKey) === "true";
+        }
+      } catch {}
+
       return {
         ...state,
         isAuthenticated: true,
-        user: action.payload,
+        user,
+        darkMode: savedDarkMode,
       };
+    }
 
     case "LOGOUT":
+      try {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      } catch {}
+
       return {
-        ...getInitialState(),
+        ...state,
         user: null,
         isAuthenticated: false,
         darkMode: state.darkMode,
       };
 
-    case "SET_USER":
+    case "SET_USER": {
+      const user = action.payload;
+
+      try {
+        localStorage.setItem("user", JSON.stringify(user));
+      } catch {}
+
       return {
         ...state,
-        user: action.payload,
+        user,
       };
+    }
 
     case "SET_ONBOARDED":
       return {
@@ -75,6 +117,12 @@ function appReducer(state, action) {
         darkMode: action.payload,
       };
 
+    case "TOGGLE_DARK_MODE":
+      return {
+        ...state,
+        darkMode: !state.darkMode,
+      };
+
     default:
       return state;
   }
@@ -87,9 +135,13 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     try {
-      localStorage.setItem("temanku_dark_mode", String(state.darkMode));
+      const darkModeKey = getDarkModeKey(state.user);
+
+      if (darkModeKey) {
+        localStorage.setItem(darkModeKey, String(state.darkMode));
+      }
     } catch {}
-  }, [state.darkMode]);
+  }, [state.darkMode, state.user]);
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>

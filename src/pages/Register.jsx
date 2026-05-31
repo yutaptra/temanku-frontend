@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Eye, EyeOff, CircleX, LoaderCircle } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import logo from "../assets/Logo TEMANKU.svg";
 import api from "../services/api";
 
-// ── Komponen input field reusable ─────────────────────────────
 function FormField({
   label,
   id,
@@ -14,12 +14,19 @@ function FormField({
   onChange,
   placeholder,
   rightElement,
+  isDark,
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-neutral-700 text-sm font-medium">
+      <label
+        htmlFor={id}
+        className={`text-sm font-medium ${
+          isDark ? "text-neutral-200" : "text-neutral-700"
+        }`}
+      >
         {label}
       </label>
+
       <div className="relative">
         <input
           id={id}
@@ -33,19 +40,19 @@ function FormField({
               ? "email"
               : name === "name"
                 ? "name"
-                : name === "password"
-                  ? "new-password"
-                  : "new-password"
+                : "new-password"
           }
-          className="
-            w-full px-4 py-3 rounded-xl border text-sm
-            text-neutral-800 placeholder-neutral-300
+          className={`
+            w-full px-4 py-3 rounded-xl border text-sm pr-11
             outline-none transition-all duration-200
-            border-neutral-200 bg-neutral-50
-            focus:border-primary-400 focus:bg-white focus:ring-2 focus:ring-primary-100
-            pr-11
-          "
+            ${
+              isDark
+                ? "border-neutral-700 bg-neutral-800 text-white placeholder-neutral-500 focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20"
+                : "border-neutral-200 bg-neutral-50 text-neutral-800 placeholder-neutral-300 focus:border-primary-400 focus:bg-white focus:ring-2 focus:ring-primary-100"
+            }
+          `}
         />
+
         {rightElement && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             {rightElement}
@@ -56,49 +63,28 @@ function FormField({
   );
 }
 
-// ── Ikon mata (show/hide password) ───────────────────────────
-function EyeIcon({ open, onClick }) {
+function EyeIcon({ open, onClick, isDark }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="text-neutral-400 hover:text-neutral-600 transition-colors"
+      className={`transition-colors ${
+        isDark
+          ? "text-neutral-500 hover:text-neutral-300"
+          : "text-neutral-400 hover:text-neutral-600"
+      }`}
       aria-label={open ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
     >
       {open ? (
-        <svg
-          viewBox="0 0 24 24"
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-          <line x1="1" y1="1" x2="23" y2="23" />
-        </svg>
+        <EyeOff className="w-5 h-5" strokeWidth={1.8} />
       ) : (
-        <svg
-          viewBox="0 0 24 24"
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
+        <Eye className="w-5 h-5" strokeWidth={1.8} />
       )}
     </button>
   );
 }
 
-// ── Indikator kekuatan password ───────────────────────────────
-function PasswordStrength({ password }) {
+function PasswordStrength({ password, isDark }) {
   if (!password) return null;
 
   const checks = [
@@ -107,6 +93,7 @@ function PasswordStrength({ password }) {
     /[0-9]/.test(password),
     /[^A-Za-z0-9]/.test(password),
   ];
+
   const score = checks.filter(Boolean).length;
 
   const levels = [
@@ -115,31 +102,41 @@ function PasswordStrength({ password }) {
     { label: "Baik", color: "bg-yellow-400" },
     { label: "Kuat", color: "bg-green-500" },
   ];
+
   const level = levels[score - 1] || levels[0];
 
   return (
     <div className="flex items-center gap-2 mt-1">
       <div className="flex gap-1 flex-1">
-        {levels.map((l, i) => (
+        {levels.map((_, i) => (
           <div
             key={i}
             className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-              i < score ? level.color : "bg-neutral-200"
+              i < score
+                ? level.color
+                : isDark
+                  ? "bg-neutral-700"
+                  : "bg-neutral-200"
             }`}
           />
         ))}
       </div>
-      <span className="text-[10px] font-medium text-neutral-500 w-8 text-right">
+
+      <span
+        className={`text-[10px] font-medium w-8 text-right ${
+          isDark ? "text-neutral-400" : "text-neutral-500"
+        }`}
+      >
         {level.label}
       </span>
     </div>
   );
 }
 
-// ── Halaman Register ──────────────────────────────────────────
 export default function Register() {
   const navigate = useNavigate();
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
+  const isDark = state.darkMode;
 
   const [form, setForm] = useState({
     name: "",
@@ -147,6 +144,7 @@ export default function Register() {
     password: "",
     confirmPassword: "",
   });
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -188,7 +186,6 @@ export default function Register() {
       });
 
       const data = res.data;
-      console.log(data);
 
       if (data.code === "400" || data.status === "Bad Request") {
         setError(data.message || "Pendaftaran gagal.");
@@ -208,46 +205,69 @@ export default function Register() {
       console.error(err);
 
       const message = err.response?.data?.detail || "Pendaftaran gagal.";
-
       setError(typeof message === "string" ? message : "Pendaftaran gagal.");
     } finally {
       setIsLoading(false);
     }
   }
 
+  const inputClass = `
+    w-full px-4 py-3 pr-11 rounded-xl border text-sm
+    outline-none transition-all duration-200
+    ${
+      isDark
+        ? "border-neutral-700 bg-neutral-800 text-white placeholder-neutral-500 focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20"
+        : "border-neutral-200 bg-neutral-50 text-neutral-800 placeholder-neutral-300 focus:border-primary-400 focus:bg-white focus:ring-2 focus:ring-primary-100"
+    }
+  `;
+
   return (
     <div
-      className="app-shell items-center justify-center"
+      className="
+        min-h-screen w-full
+        flex flex-col items-center justify-center
+        px-5 py-8 transition-colors duration-300
+      "
       style={{
-        background: "linear-gradient(180deg, #F8FAFF 0%, #F0F4FF 100%)",
+        background: isDark
+          ? "linear-gradient(180deg, #0F172A 0%, #111827 100%)"
+          : "linear-gradient(180deg, #F8FAFF 0%, #F0F4FF 100%)",
       }}
     >
-      {/* ── Logo + Nama App ─────────────────────────────────── */}
       <div className="flex items-center gap-3 mb-8">
         <img
           src={logo}
           alt="Logo TEMANKU"
           className="w-14 h-14 object-contain"
         />
+
         <span
-          className="font-display font-bold text-primary-600 text-2xl"
-          style={{ letterSpacing: "0.18em" }}
+          className="font-display font-bold text-2xl"
+          style={{
+            letterSpacing: "0.18em",
+            color: isDark ? "#FFFFFF" : "#176AC3",
+          }}
         >
           TEMANKU
         </span>
       </div>
 
-      {/* ── Card Form ───────────────────────────────────────── */}
-      <div className="w-full px-5">
+      <div className="w-full max-w-md">
         <div
-          className="bg-white rounded-3xl px-6 py-8"
+          className={`rounded-3xl px-6 py-8 transition-colors duration-300 ${
+            isDark ? "bg-neutral-900" : "bg-white"
+          }`}
           style={{
-            boxShadow:
-              "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 40px -8px rgba(59,125,255,0.12)",
+            boxShadow: isDark
+              ? "0 10px 30px rgba(0,0,0,0.35)"
+              : "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 40px -8px rgba(59,125,255,0.12)",
           }}
         >
-          {/* Judul */}
-          <h1 className="text-neutral-800 font-bold text-xl text-center mb-6">
+          <h1
+            className={`font-bold text-xl text-center mb-6 ${
+              isDark ? "text-white" : "text-neutral-800"
+            }`}
+          >
             Daftar Akun
           </h1>
 
@@ -256,7 +276,6 @@ export default function Register() {
             noValidate
             className="flex flex-col gap-4"
           >
-            {/* Nama */}
             <FormField
               label="Nama"
               id="name"
@@ -265,9 +284,9 @@ export default function Register() {
               value={form.name}
               onChange={handleChange}
               placeholder="Nama lengkap kamu"
+              isDark={isDark}
             />
 
-            {/* Email */}
             <FormField
               label="Email"
               id="email"
@@ -276,16 +295,19 @@ export default function Register() {
               value={form.email}
               onChange={handleChange}
               placeholder="contoh@email.com"
+              isDark={isDark}
             />
 
-            {/* Kata Sandi */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="password"
-                className="text-neutral-700 text-sm font-medium"
+                className={`text-sm font-medium ${
+                  isDark ? "text-neutral-200" : "text-neutral-700"
+                }`}
               >
                 Kata Sandi
               </label>
+
               <div className="relative">
                 <input
                   id="password"
@@ -295,32 +317,31 @@ export default function Register() {
                   onChange={handleChange}
                   placeholder="Minimal 8 karakter"
                   autoComplete="new-password"
-                  className="
-                    w-full px-4 py-3 pr-11 rounded-xl border text-sm
-                    text-neutral-800 placeholder-neutral-300
-                    outline-none transition-all duration-200
-                    border-neutral-200 bg-neutral-50
-                    focus:border-primary-400 focus:bg-white focus:ring-2 focus:ring-primary-100
-                  "
+                  className={inputClass}
                 />
+
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   <EyeIcon
                     open={showPassword}
                     onClick={() => setShowPassword((v) => !v)}
+                    isDark={isDark}
                   />
                 </div>
               </div>
-              <PasswordStrength password={form.password} />
+
+              <PasswordStrength password={form.password} isDark={isDark} />
             </div>
 
-            {/* Konfirmasi Kata Sandi */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="confirmPassword"
-                className="text-neutral-700 text-sm font-medium"
+                className={`text-sm font-medium ${
+                  isDark ? "text-neutral-200" : "text-neutral-700"
+                }`}
               >
                 Konfirmasi Kata Sandi
               </label>
+
               <div className="relative">
                 <input
                   id="confirmPassword"
@@ -332,114 +353,69 @@ export default function Register() {
                   autoComplete="new-password"
                   className={`
                     w-full px-4 py-3 pr-11 rounded-xl border text-sm
-                    text-neutral-800 placeholder-neutral-300
-                    outline-none transition-all duration-200 bg-neutral-50
-                    focus:ring-2
+                    outline-none transition-all duration-200
+                    ${
+                      isDark
+                        ? "bg-neutral-800 text-white placeholder-neutral-500"
+                        : "bg-neutral-50 text-neutral-800 placeholder-neutral-300"
+                    }
                     ${
                       form.confirmPassword &&
                       form.password !== form.confirmPassword
-                        ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                        ? "border-red-300 focus:border-red-400 focus:ring-2 focus:ring-red-100"
                         : form.confirmPassword &&
                             form.password === form.confirmPassword
-                          ? "border-green-300 focus:border-green-400 focus:ring-green-100"
-                          : "border-neutral-200 focus:border-primary-400 focus:ring-primary-100"
+                          ? "border-green-300 focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                          : isDark
+                            ? "border-neutral-700 focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20"
+                            : "border-neutral-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                     }
                   `}
                 />
+
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   <EyeIcon
                     open={showConfirmPassword}
                     onClick={() => setShowConfirmPassword((v) => !v)}
+                    isDark={isDark}
                   />
                 </div>
-                {/* Indikator match */}
-                {form.confirmPassword && (
-                  <div className="absolute right-10 top-1/2 -translate-y-1/2">
-                    {form.password === form.confirmPassword ? (
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="w-4 h-4 text-green-500"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="w-4 h-4 text-red-400"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Pesan error */}
             {error && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-4 h-4 text-red-500 flex-shrink-0"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <p className="text-red-600 text-xs font-medium">{error}</p>
+              <div
+                className={`flex items-center gap-2 rounded-xl px-3 py-2.5 border ${
+                  isDark
+                    ? "bg-red-950/40 border-red-900"
+                    : "bg-red-50 border-red-100"
+                }`}
+              >
+                <CircleX className="w-4 h-4 text-red-500 flex-shrink-0" />
+
+                <p className="text-red-500 text-xs font-medium">{error}</p>
               </div>
             )}
 
-            {/* Tombol Daftar */}
             <button
               type="submit"
               disabled={isLoading}
               className="
                 w-full py-3.5 rounded-xl font-semibold text-white text-sm
                 transition-all duration-200 active:scale-95 mt-1
-                disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100
+                disabled:opacity-70 disabled:cursor-not-allowed
+                disabled:active:scale-100
               "
               style={{
-                background: "linear-gradient(135deg, #3B7DFF 0%, #1A5FE8 100%)",
+                background: "linear-gradient(135deg, #176AC3 0%, #1F7DE3 100%)",
                 boxShadow: isLoading
                   ? "none"
-                  : "0 4px 14px rgba(59,125,255,0.4)",
+                  : "0 4px 14px rgba(23,106,195,0.4)",
               }}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg
-                    className="animate-spin w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
-                    />
-                  </svg>
+                  <LoaderCircle className="animate-spin w-4 h-4" />
                   Memproses...
                 </span>
               ) : (
@@ -448,12 +424,16 @@ export default function Register() {
             </button>
           </form>
 
-          {/* Link ke Login */}
-          <p className="text-center text-sm text-neutral-500 mt-4">
+          <p
+            className={`text-center text-sm mt-4 ${
+              isDark ? "text-neutral-400" : "text-neutral-500"
+            }`}
+          >
             Sudah punya akun?{" "}
             <Link
               to="/login"
-              className="text-primary-600 font-semibold hover:text-primary-700 transition-colors"
+              className="font-semibold transition-opacity hover:opacity-80"
+              style={{ color: "#1A81F0" }}
             >
               Masuk
             </Link>

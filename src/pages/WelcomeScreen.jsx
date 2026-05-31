@@ -1,21 +1,28 @@
 import { useNavigate } from "react-router-dom";
+import { useApp } from "../context/AppContext";
 import logo from "../assets/Logo TEMANKU.svg";
 
-// ── Halaman Welcome Screen ────────────────────────────────────
 export default function WelcomeScreen() {
   const navigate = useNavigate();
+  const { state } = useApp();
+
+  const isDark = state.darkMode;
 
   return (
     <div
-      className="app-shell"
+      className="
+        min-h-screen w-full
+        flex flex-col items-center justify-center
+        px-5 py-8 transition-colors duration-300
+      "
       style={{
-        background: "linear-gradient(180deg, #F8FAFF 0%, #F0F4FF 100%)",
+        background: isDark
+          ? "linear-gradient(180deg, #0F172A 0%, #111827 100%)"
+          : "linear-gradient(180deg, #F8FAFF 0%, #F0F4FF 100%)",
       }}
     >
-      {/* ── Bagian atas: Logo + Nama App ───────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 pt-16 pb-6">
-        {/* Logo lingkaran */}
-        <div className="w-32 h-32 mb-6">
+      <div className="flex flex-col items-center mb-8">
+        <div className="w-28 h-28 mb-5">
           <img
             src={logo}
             alt="Logo TEMANKU"
@@ -23,41 +30,49 @@ export default function WelcomeScreen() {
           />
         </div>
 
-        {/* Nama app */}
         <h1
-          className="font-display font-bold text-primary-600 text-3xl mb-2"
-          style={{ letterSpacing: "0.25em" }}
+          className="font-display font-bold text-3xl mb-2"
+          style={{
+            letterSpacing: "0.25em",
+            color: isDark ? "#FFFFFF" : "#176AC3",
+          }}
         >
           TEMANKU
         </h1>
 
-        {/* Subtitle */}
-        <p className="text-neutral-500 text-sm text-center font-medium leading-snug">
+        <p
+          className={`text-sm text-center font-medium leading-snug ${
+            isDark ? "text-neutral-400" : "text-neutral-500"
+          }`}
+        >
           Sistem Penerjemah Komunikasi Tunarungu
         </p>
       </div>
 
-      {/* ── Card bawah ─────────────────────────────────────── */}
-      <div className="px-5 pb-10">
+      <div className="w-full max-w-md">
         <div
-          className="bg-white rounded-3xl px-6 py-8"
+          className={`rounded-3xl px-6 py-8 transition-colors duration-300 ${
+            isDark ? "bg-neutral-900" : "bg-white"
+          }`}
           style={{
-            boxShadow:
-              "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 40px -8px rgba(59,125,255,0.12)",
+            boxShadow: isDark
+              ? "0 10px 30px rgba(0,0,0,0.35)"
+              : "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 40px -8px rgba(59,125,255,0.12)",
           }}
         >
-          {/* Judul card */}
-          <h2 className="text-neutral-800 font-bold text-xl text-center mb-3 leading-snug">
+          <h2
+            className={`font-bold text-xl text-center mb-3 leading-snug ${
+              isDark ? "text-white" : "text-neutral-800"
+            }`}
+          >
             Selamat Datang di <span className="text-primary-600">TEMANKU</span>
           </h2>
 
-          {/* Deskripsi */}
-          <p className="text-neutral-400 text-sm text-center leading-relaxed mb-7">
+          <p className="text-sm text-center leading-relaxed mb-7 text-neutral-400">
             Aplikasi penerjemah bahasa isyarat yang membantu komunikasi
             komunitas tunarungu secara real-time dan mudah digunakan.
           </p>
 
-          {/* Tombol Daftar */}
           <button
             onClick={() => navigate("/register")}
             className="
@@ -65,21 +80,27 @@ export default function WelcomeScreen() {
               transition-all duration-200 active:scale-95 mb-3
             "
             style={{
-              background: "linear-gradient(135deg, #3B7DFF 0%, #1A5FE8 100%)",
-              boxShadow: "0 4px 14px rgba(59,125,255,0.4)",
+              background: "linear-gradient(135deg, #176AC3 0%, #1F7DE3 100%)",
+              boxShadow: "0 4px 14px rgba(23,106,195,0.4)",
             }}
           >
             Daftar
           </button>
 
-          {/* Tombol Masuk (text link) */}
           <button
             onClick={() => navigate("/login")}
-            className="
-              w-full py-2.5 rounded-xl font-semibold text-primary-600 text-sm
+            className={`
+              w-full py-2.5 rounded-xl font-semibold text-sm
               transition-all duration-200 active:scale-95
-              hover:bg-primary-50
-            "
+              ${
+                isDark
+                  ? "bg-neutral-800 text-white hover:bg-neutral-700"
+                  : "hover:bg-primary-50"
+              }
+          `}
+            style={{
+              color: isDark ? "#FFFFFF" : "#176AC3",
+            }}
           >
             Masuk
           </button>
