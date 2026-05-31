@@ -26,7 +26,25 @@ const STATS = [
 
 const DAILY_TARGET = { current: 10, total: 15 };
 
-const DAILY_PCT = Math.round((DAILY_TARGET.current / DAILY_TARGET.total) * 100);
+const DAILY_PCT =
+  DAILY_TARGET.total > 0
+    ? Math.round((DAILY_TARGET.current / DAILY_TARGET.total) * 100)
+    : 0;
+
+const QUICK_ACTIONS = [
+  {
+    id: "translate",
+    label: "Mulai Terjemah",
+    to: "/translate",
+    icon: Monitor,
+  },
+  {
+    id: "learning",
+    label: "Latihan SIBI",
+    to: "/learning",
+    icon: BookOpen,
+  },
+];
 
 function StatCard({ icon, value, label }) {
   return (
@@ -56,7 +74,7 @@ export default function Home() {
   const dk = useDarkMode();
   const { state } = useApp();
 
-  const USER_NAME = state.user?.name || "Pengguna";
+  const userName = state.user?.name || "Pengguna";
 
   return (
     <div
@@ -78,7 +96,7 @@ export default function Home() {
         </h1>
 
         <p className="text-blue-100 text-sm font-medium mb-6">
-          Selamat datang, {USER_NAME}!
+          Selamat datang, {userName}!
         </p>
 
         <div className="flex gap-2.5">
@@ -149,25 +167,10 @@ export default function Home() {
           </h2>
 
           <div className="flex gap-3">
-            {[
-              {
-                label: "Mulai Terjemah",
-                to: "/translate",
-                icon: (
-                  <Monitor className="w-6 h-6 text-white" strokeWidth={2} />
-                ),
-              },
-              {
-                label: "Latihan SIBI",
-                to: "/learning",
-                icon: (
-                  <BookOpen className="w-6 h-6 text-white" strokeWidth={2} />
-                ),
-              },
-            ].map(({ label, to, icon }) => (
+            {QUICK_ACTIONS.map((action) => (
               <button
-                key={to}
-                onClick={() => navigate(to)}
+                key={action.id}
+                onClick={() => navigate(action.to)}
                 className="
                   flex-1 flex flex-col items-center justify-center gap-3
                   py-5 rounded-2xl font-semibold text-white text-sm
@@ -182,10 +185,10 @@ export default function Home() {
                   className="w-12 h-12 rounded-full flex items-center justify-center"
                   style={{ background: "rgba(255,255,255,0.2)" }}
                 >
-                  {icon}
+                  <action.icon className="w-6 h-6 text-white" strokeWidth={2} />
                 </div>
 
-                {label}
+                {action.label}
               </button>
             ))}
           </div>

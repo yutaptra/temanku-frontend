@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, CircleX, LoaderCircle } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import logo from "../assets/Logo TEMANKU.svg";
+import logo from "../assets/logo-temanku.svg";
 import api from "../services/api";
 
 function FormField({
@@ -43,7 +43,8 @@ function FormField({
                 : "new-password"
           }
           className={`
-            w-full px-4 py-3 rounded-xl border text-sm pr-11
+            w-full px-4 py-3 rounded-xl border text-sm
+            ${rightElement ? "pr-11" : "pr-4"}
             outline-none transition-all duration-200
             ${
               isDark
@@ -177,11 +178,11 @@ export default function Register() {
 
     try {
       const res = await api.post("/signup", {
-        full_name: form.name,
+        full_name: form.name.trim(),
         password: form.password,
-        email: form.email,
+        email: form.email.trim(),
         phone_number: "",
-        first_name: form.name,
+        first_name: form.name.trim(),
         last_name: "",
       });
 
@@ -192,15 +193,12 @@ export default function Register() {
         return;
       }
 
-      dispatch({
-        type: "LOGIN",
-        payload: {
-          name: form.name,
-          email: form.email,
+      navigate("/login", {
+        replace: true,
+        state: {
+          successMessage: "Pendaftaran berhasil. Silakan masuk.",
         },
       });
-
-      navigate("/home", { replace: true });
     } catch (err) {
       console.error(err);
 
@@ -210,16 +208,6 @@ export default function Register() {
       setIsLoading(false);
     }
   }
-
-  const inputClass = `
-    w-full px-4 py-3 pr-11 rounded-xl border text-sm
-    outline-none transition-all duration-200
-    ${
-      isDark
-        ? "border-neutral-700 bg-neutral-800 text-white placeholder-neutral-500 focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20"
-        : "border-neutral-200 bg-neutral-50 text-neutral-800 placeholder-neutral-300 focus:border-primary-400 focus:bg-white focus:ring-2 focus:ring-primary-100"
-    }
-  `;
 
   return (
     <div
@@ -298,90 +286,43 @@ export default function Register() {
               isDark={isDark}
             />
 
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="password"
-                className={`text-sm font-medium ${
-                  isDark ? "text-neutral-200" : "text-neutral-700"
-                }`}
-              >
-                Kata Sandi
-              </label>
-
-              <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="Minimal 8 karakter"
-                  autoComplete="new-password"
-                  className={inputClass}
+            <FormField
+              label="Kata Sandi"
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              value={form.password}
+              onChange={handleChange}
+              placeholder="Minimal 8 karakter"
+              isDark={isDark}
+              rightElement={
+                <EyeIcon
+                  open={showPassword}
+                  onClick={() => setShowPassword((v) => !v)}
+                  isDark={isDark}
                 />
+              }
+            />
 
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <EyeIcon
-                    open={showPassword}
-                    onClick={() => setShowPassword((v) => !v)}
-                    isDark={isDark}
-                  />
-                </div>
-              </div>
+            <PasswordStrength password={form.password} isDark={isDark} />
 
-              <PasswordStrength password={form.password} isDark={isDark} />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="confirmPassword"
-                className={`text-sm font-medium ${
-                  isDark ? "text-neutral-200" : "text-neutral-700"
-                }`}
-              >
-                Konfirmasi Kata Sandi
-              </label>
-
-              <div className="relative">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Ulangi kata sandi"
-                  autoComplete="new-password"
-                  className={`
-                    w-full px-4 py-3 pr-11 rounded-xl border text-sm
-                    outline-none transition-all duration-200
-                    ${
-                      isDark
-                        ? "bg-neutral-800 text-white placeholder-neutral-500"
-                        : "bg-neutral-50 text-neutral-800 placeholder-neutral-300"
-                    }
-                    ${
-                      form.confirmPassword &&
-                      form.password !== form.confirmPassword
-                        ? "border-red-300 focus:border-red-400 focus:ring-2 focus:ring-red-100"
-                        : form.confirmPassword &&
-                            form.password === form.confirmPassword
-                          ? "border-green-300 focus:border-green-400 focus:ring-2 focus:ring-green-100"
-                          : isDark
-                            ? "border-neutral-700 focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20"
-                            : "border-neutral-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                    }
-                  `}
+            <FormField
+              label="Konfirmasi Kata Sandi"
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              value={form.confirmPassword}
+              onChange={handleChange}
+              placeholder="Ulangi kata sandi"
+              isDark={isDark}
+              rightElement={
+                <EyeIcon
+                  open={showConfirmPassword}
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  isDark={isDark}
                 />
-
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <EyeIcon
-                    open={showConfirmPassword}
-                    onClick={() => setShowConfirmPassword((v) => !v)}
-                    isDark={isDark}
-                  />
-                </div>
-              </div>
-            </div>
+              }
+            />
 
             {error && (
               <div

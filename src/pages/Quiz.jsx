@@ -2,8 +2,20 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDarkMode } from "../hooks/useDarkMode";
+import api from "../services/api";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+function getImageUrl(imageUrl) {
+  if (!imageUrl || imageUrl === "string") return null;
+
+  if (String(imageUrl).startsWith("http")) return imageUrl;
+
+  return `${API_BASE_URL.replace(/\/$/, "")}/${String(imageUrl).replace(
+    /^\//,
+    "",
+  )}`;
+}
 
 export default function Quiz() {
   const navigate = useNavigate();
@@ -27,22 +39,22 @@ export default function Quiz() {
       setIsLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${API_BASE_URL}/quiz/questions/public/${id}`,
-        {
-          headers: { Accept: "application/json" },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Server mengembalikan status ${response.status}`);
-      }
-
-      const result = await response.json();
+      const response = await api.get(`/quiz/questions/public/${id}`);
+      const result = response.data;
 
       if (!result?.success || !result?.data) {
         throw new Error("Format data soal tidak sesuai.");
       }
+
+      const questionData = Array.isArray(result.data)
+        ? result.data[0]
+        : result.data;
+
+      if (!questionData) {
+        throw new Error("Soal tidak ditemukan.");
+      }
+
+      setQuestion(questionData);
 
       setQuestion(result.data);
       setSelectedAnswer("");
@@ -75,12 +87,10 @@ export default function Quiz() {
 
   const isCorrect =
     hasCorrectAnswer &&
-    selectedAnswer.toLowerCase() === String(correctAnswer).toLowerCase();
+    selectedAnswer.trim().toLowerCase() ===
+      String(correctAnswer).trim().toLowerCase();
 
-  const hasValidImage =
-    question?.image_url &&
-    question.image_url !== "string" &&
-    String(question.image_url).startsWith("http");
+  const imageUrl = getImageUrl(question?.image_url);
 
   function handleSelectAnswer(option) {
     setSelectedAnswer(option);
@@ -93,7 +103,7 @@ export default function Quiz() {
   }
 
   return (
-    <div className={`min-h-full ${dk.page} transition-colors duration-300`}>
+    <div className={`min-h-screen ${dk.page} transition-colors duration-300`}>
       <div
         className="px-4 pt-12 pb-5"
         style={{
@@ -155,12 +165,12 @@ export default function Quiz() {
               {question?.question_text || "Pertanyaan tidak tersedia."}
             </h2>
 
-            {hasValidImage && (
+            {imageUrl && (
               <div
                 className={`${dk.cardInner} rounded-2xl overflow-hidden mt-5 border`}
               >
                 <img
-                  src={question.image_url}
+                  src={imageUrl}
                   alt="Gambar soal kuis"
                   className="w-full max-h-72 object-contain"
                 />

@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, CircleX, LoaderCircle } from "lucide-react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import { Eye, EyeOff, CircleX, CircleCheck, LoaderCircle } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import logo from "../assets/Logo TEMANKU.svg";
+import logo from "../assets/logo-temanku.svg";
 import api from "../services/api";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { state, dispatch } = useApp();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const isDark = state.darkMode;
 
@@ -21,19 +23,27 @@ export default function Login() {
 
     if (params.get("session") === "expired") {
       setError("Sesi login berakhir. Silakan masuk kembali.");
-
-      window.history.replaceState({}, "", "/");
+      window.history.replaceState({}, "", "/login");
     }
-  }, []);
+
+    const successMessage = location.state?.successMessage;
+
+    if (successMessage) {
+      setSuccess(successMessage);
+      window.history.replaceState({}, "", "/login");
+    }
+  }, [location.state]);
 
   function handleChange(e) {
     setError("");
+    setSuccess("");
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     if (!form.email.trim()) return setError("Email tidak boleh kosong.");
     if (!form.password) return setError("Kata sandi tidak boleh kosong.");
@@ -42,13 +52,11 @@ export default function Login() {
 
     try {
       const res = await api.post("/login", {
-        email: form.email,
+        email: form.email.trim(),
         password: form.password,
       });
 
       const data = res.data;
-
-      console.log("LOGIN RESPONSE:", data);
 
       if (String(data.code) !== "200") {
         setError(data.message || "Email atau kata sandi salah.");
@@ -59,8 +67,8 @@ export default function Login() {
 
       const user = {
         id: data.result?.user?.id,
-        name: data.result?.user?.full_name,
-        email: form.email,
+        name: data.result?.user?.full_name || form.email.trim(),
+        email: form.email.trim(),
         role: data.result?.user?.role,
       };
 
@@ -100,17 +108,16 @@ export default function Login() {
   return (
     <div
       className="
-      min-h-screen w-full
-      flex flex-col items-center justify-center
-      px-5 py-8 transition-colors duration-300
-    "
+        min-h-screen w-full
+        flex flex-col items-center justify-center
+        px-5 py-8 transition-colors duration-300
+      "
       style={{
         background: isDark
           ? "linear-gradient(180deg, #0F172A 0%, #111827 100%)"
           : "linear-gradient(180deg, #F8FAFF 0%, #F0F4FF 100%)",
       }}
     >
-      {/* Logo */}
       <div className="flex items-center gap-3 mb-8">
         <img
           src={logo}
@@ -129,20 +136,18 @@ export default function Login() {
         </span>
       </div>
 
-      {/* Card */}
       <div className="w-full max-w-md">
         <div
           className={`
-          rounded-3xl px-6 py-8 transition-colors duration-300
-          ${isDark ? "bg-neutral-900" : "bg-white"}
-        `}
+            rounded-3xl px-6 py-8 transition-colors duration-300
+            ${isDark ? "bg-neutral-900" : "bg-white"}
+          `}
           style={{
             boxShadow: isDark
               ? "0 10px 30px rgba(0,0,0,0.35)"
               : "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 40px -8px rgba(59,125,255,0.12)",
           }}
         >
-          {/* Title */}
           <h1
             className={`
               font-bold text-xl text-center mb-6
@@ -157,7 +162,6 @@ export default function Login() {
             noValidate
             className="flex flex-col gap-4"
           >
-            {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="email"
@@ -176,10 +180,12 @@ export default function Login() {
                 autoComplete="email"
                 value={form.email}
                 onChange={handleChange}
+                disabled={isLoading}
                 placeholder="Masukkan email"
                 className={`
                   w-full px-4 py-3 rounded-xl border text-sm
                   outline-none transition-all duration-200
+                  disabled:opacity-70
                   ${
                     isDark
                       ? `
@@ -206,7 +212,6 @@ export default function Login() {
               />
             </div>
 
-            {/* Password */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="password"
@@ -226,10 +231,12 @@ export default function Login() {
                   autoComplete="current-password"
                   value={form.password}
                   onChange={handleChange}
+                  disabled={isLoading}
                   placeholder="Masukkan kata sandi"
                   className={`
                     w-full px-4 py-3 pr-11 rounded-xl border text-sm
                     outline-none transition-all duration-200
+                    disabled:opacity-70
                     ${
                       isDark
                         ? `
@@ -258,8 +265,10 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
+                  disabled={isLoading}
                   className={`
                     absolute right-3 top-1/2 -translate-y-1/2 transition-colors
+                    disabled:opacity-60
                     ${
                       isDark
                         ? "text-neutral-500 hover:text-neutral-300"
@@ -281,7 +290,23 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Error */}
+            {success && (
+              <div
+                className={`
+                  flex items-center gap-2 rounded-xl px-3 py-2.5 border
+                  ${
+                    isDark
+                      ? "bg-green-950/40 border-green-900"
+                      : "bg-green-50 border-green-100"
+                  }
+                `}
+              >
+                <CircleCheck className="w-4 h-4 text-green-500 flex-shrink-0" />
+
+                <p className="text-green-500 text-xs font-medium">{success}</p>
+              </div>
+            )}
+
             {error && (
               <div
                 className={`
@@ -299,7 +324,6 @@ export default function Login() {
               </div>
             )}
 
-            {/* Button */}
             <button
               type="submit"
               disabled={isLoading}
@@ -308,7 +332,7 @@ export default function Login() {
                 transition-all duration-200 active:scale-95 mt-1
                 disabled:opacity-70 disabled:cursor-not-allowed
                 disabled:active:scale-100
-             "
+              "
               style={{
                 background: "linear-gradient(135deg, #176AC3 0%, #1F7DE3 100%)",
                 boxShadow: isLoading
@@ -327,7 +351,6 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Register */}
           <p
             className={`
               text-center text-sm mt-4

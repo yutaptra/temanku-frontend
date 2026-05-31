@@ -7,9 +7,9 @@ import {
   Play,
   Sparkles,
   Target,
+  X,
 } from "lucide-react";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import api from "../services/api";
 
 const DIFFICULTY_STYLE = {
   easy: "bg-green-100 text-green-700",
@@ -208,19 +208,36 @@ function QuizModal({ quiz, onClose, onConfirm, dk }) {
       onClick={onClose}
     >
       <div
-        className={`${dk.card} border w-full max-w-mobile rounded-t-3xl px-5 pt-4 pb-10`}
+        className={`${dk.card} border w-full max-w-mobile rounded-t-3xl px-5 pt-4 pb-10 relative`}
         style={{ animation: "slideUp .25s ease-out" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className={`w-10 h-1 ${dk.divider} rounded-full mx-auto mb-5`} />
+        <div className="relative mb-5">
+          <button
+            onClick={onClose}
+            className={`
+      absolute top-0 right-0
+      w-10 h-10 rounded-full
+      border flex items-center justify-center
+      active:scale-95 transition-transform
+      ${dk.cardInner}
+    `}
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-        <div className="flex items-center gap-3 mb-4">
-          <IconCard done={isDone} />
-          <div>
-            <h2 className={`font-display font-bold ${dk.textPrimary} text-xl`}>
-              {quiz.title}
-            </h2>
-            <p className={`${dk.textSecondary} text-sm`}>{quiz.description}</p>
+          <div className="flex items-start gap-3 pr-14">
+            <IconCard done={isDone} />
+            <div>
+              <h2
+                className={`font-display font-bold ${dk.textPrimary} text-xl`}
+              >
+                {quiz.title}
+              </h2>
+              <p className={`${dk.textSecondary} text-sm`}>
+                {quiz.description}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -308,15 +325,9 @@ export default function Learning() {
       setIsLoading(true);
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/quiz/questions/public`, {
-        headers: { Accept: "application/json" },
-      });
+      const response = await api.get("/quiz/questions/public");
 
-      if (!response.ok) {
-        throw new Error(`Server mengembalikan status ${response.status}`);
-      }
-
-      const result = await response.json();
+      const result = response.data;
 
       if (!result?.success || !Array.isArray(result?.data)) {
         throw new Error("Format data dari server tidak sesuai.");

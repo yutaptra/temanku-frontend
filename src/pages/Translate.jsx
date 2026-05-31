@@ -2,8 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Camera, Languages, Square, LoaderCircle } from "lucide-react";
 import { useDarkMode } from "../hooks/useDarkMode";
 
-const WS_URL =
-  "wss://temanku-backend-70685098724.asia-southeast2.run.app/ws/predict";
+const WS_URL = import.meta.env.VITE_WS_PREDICT_URL;
 
 const FRAME_INTERVAL_MS = 300;
 
@@ -69,6 +68,8 @@ function useTranslation() {
     if (video.readyState < 2) return;
 
     const ctx = canvas.getContext("2d");
+
+    if (!ctx) return;
 
     canvas.width = 640;
     canvas.height = 480;
@@ -148,7 +149,7 @@ function useTranslation() {
       ws.onerror = () => {
         setErrorMsg("Koneksi ke server gagal. Kamera tetap aktif.");
         setStatus(STATUS.ERROR);
-        cleanupWebSocket();
+        cleanupAll();
       };
 
       ws.onclose = (event) => {
@@ -179,12 +180,10 @@ function useTranslation() {
     setStatus(STATUS.STOPPING);
     cleanupAll();
 
-    setTimeout(() => {
-      setStatus(STATUS.IDLE);
-      setErrorMsg("");
-      setTranslation("");
-      setConfidence(null);
-    }, 300);
+    setStatus(STATUS.IDLE);
+    setErrorMsg("");
+    setTranslation("");
+    setConfidence(null);
   }, [cleanupAll]);
 
   useEffect(() => {

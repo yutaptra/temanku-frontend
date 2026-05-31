@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
-  Bell,
   ChevronRight,
   CircleHelp,
   Info,
@@ -11,6 +10,24 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useDarkMode } from "../hooks/useDarkMode";
+
+const INFO_MODALS = {
+  privasi: {
+    title: "Privasi & Keamanan",
+    content:
+      "Data kamu disimpan dengan aman menggunakan enkripsi standar industri. TEMANKU tidak menjual atau membagikan data pribadi kamu kepada pihak ketiga tanpa izin.",
+  },
+  bantuan: {
+    title: "Bantuan & Dukungan",
+    content:
+      "Butuh bantuan? Hubungi tim kami melalui email: support@temanku.id\n\nKami siap membantu setiap hari pukul 08.00–20.00 WIB.",
+  },
+  tentang: {
+    title: "Tentang TEMANKU",
+    content:
+      "TEMANKU v1.0.0\nSistem Penerjemah Komunikasi Tunarungu.\n\nDikembangkan sebagai proyek skripsi untuk membantu komunikasi komunitas tunarungu menggunakan teknologi pengenalan bahasa isyarat SIBI berbasis AI.",
+  },
+};
 
 function Toggle({ enabled, onChange, dk }) {
   return (
@@ -158,30 +175,7 @@ export default function Settings() {
   const { state, dispatch } = useApp();
   const dk = useDarkMode();
 
-  const [localSettings, setLocalSettings] = useState({
-    pushNotification: true,
-    soundEffect: true,
-  });
-
   const [modal, setModal] = useState(null);
-
-  const INFO_MODALS = {
-    privasi: {
-      title: "Privasi & Keamanan",
-      content:
-        "Data kamu disimpan dengan aman menggunakan enkripsi standar industri. TEMANKU tidak menjual atau membagikan data pribadi kamu kepada pihak ketiga tanpa izin.",
-    },
-    bantuan: {
-      title: "Bantuan & Dukungan",
-      content:
-        "Butuh bantuan? Hubungi tim kami melalui email: support@temanku.id\n\nKami siap membantu setiap hari pukul 08.00–20.00 WIB.",
-    },
-    tentang: {
-      title: "Tentang TEMANKU",
-      content:
-        "TEMANKU v1.0.0\nSistem Penerjemah Komunikasi Tunarungu.\n\nDikembangkan sebagai proyek skripsi untuk membantu komunikasi komunitas tunarungu menggunakan teknologi pengenalan bahasa isyarat SIBI berbasis AI.",
-    },
-  };
 
   const iconClass = `w-5 h-5 ${
     dk.isDark ? "text-primary-400" : "text-primary-600"
@@ -191,7 +185,7 @@ export default function Settings() {
 
   return (
     <div
-      className={`flex flex-col min-h-full ${dk.page} transition-colors duration-300`}
+      className={`flex flex-col min-h-screen ${dk.page} transition-colors duration-300`}
     >
       <div
         className="px-4 pt-12 pb-5"
@@ -217,33 +211,6 @@ export default function Settings() {
       </div>
 
       <div className="flex-1 px-4 pt-4 pb-10 flex flex-col gap-3">
-        <SectionCard
-          dk={dk}
-          title="Notifikasi"
-          icon={<Bell className={iconClass} />}
-        >
-          <ToggleRow
-            dk={dk}
-            label="Notifikasi Push"
-            description="Terima pengingat harian dan pembaruan"
-            enabled={localSettings.pushNotification}
-            onChange={(v) =>
-              setLocalSettings((p) => ({ ...p, pushNotification: v }))
-            }
-          />
-
-          <ToggleRow
-            dk={dk}
-            label="Efek Suara"
-            description="Memutar suara untuk aksi dan pencapaian"
-            enabled={localSettings.soundEffect}
-            onChange={(v) =>
-              setLocalSettings((p) => ({ ...p, soundEffect: v }))
-            }
-            showDivider={false}
-          />
-        </SectionCard>
-
         <SectionCard
           dk={dk}
           title="Tampilan"

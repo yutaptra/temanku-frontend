@@ -9,7 +9,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 function getImageUrl(imageUrl) {
   if (!imageUrl) return null;
   if (imageUrl.startsWith("http")) return imageUrl;
-  return `${API_BASE_URL}/${imageUrl}`;
+  if (!API_BASE_URL) return imageUrl;
+
+  return `${API_BASE_URL.replace(/\/$/, "")}/${imageUrl.replace(/^\//, "")}`;
 }
 
 function Thumbnail({ item, variant = "card" }) {
@@ -131,8 +133,8 @@ export default function Dictionary() {
 
       const matchSearch =
         !keyword ||
-        item.name.toLowerCase().includes(keyword) ||
-        item.description.toLowerCase().includes(keyword);
+        (item.name || "").toLowerCase().includes(keyword) ||
+        (item.description || "").toLowerCase().includes(keyword);
 
       return matchFilter && matchSearch;
     });
@@ -243,23 +245,23 @@ export default function Dictionary() {
         ${dk.card}
         border w-full max-w-md
         rounded-3xl
-        px-4 pt-3 pb-5
+        px-5 pt-4 pb-5
         max-h-[92vh]
         overflow-y-auto
       `}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative flex items-center justify-center mb-4">
-              <div className={`w-10 h-1 ${dk.divider} rounded-full`} />
-
+            <div className="flex justify-end mb-4">
               <button
                 type="button"
                 onClick={closeDetail}
                 className={`
             ${dk.cardInner}
-            absolute right-0 top-1/2 -translate-y-1/2
-            border rounded-full p-2
+            w-10 h-10
+            border rounded-full
+            flex items-center justify-center
             active:scale-95 transition-transform
+            shrink-0
           `}
                 aria-label="Tutup detail kamus"
               >

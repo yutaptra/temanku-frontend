@@ -1,7 +1,13 @@
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  console.warn("VITE_API_BASE_URL belum diatur.");
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -28,7 +34,7 @@ api.interceptors.response.use(
       localStorage.removeItem("user");
 
       if (window.location.pathname !== "/login") {
-        window.location.href = "/login?session=expired";
+        window.location.replace("/login?session=expired");
       }
     }
 

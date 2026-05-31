@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
-import logo from "../assets/Logo TEMANKU.svg";
+import logo from "../assets/logo-temanku.svg";
 
 export default function WelcomeScreen() {
   const navigate = useNavigate();
