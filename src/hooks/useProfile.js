@@ -22,6 +22,31 @@ function getUploadedPhotoUrl(data, fallbackUrl) {
   );
 }
 
+function getSavedUser() {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "null");
+  } catch {
+    return null;
+  }
+}
+
+function mergeUserData(newProfile, currentUser) {
+  const savedUser = getSavedUser();
+
+  const mergedUser = {
+    ...savedUser,
+    ...currentUser,
+    ...newProfile,
+
+    role: newProfile?.role || currentUser?.role || savedUser?.role,
+    token: currentUser?.token || savedUser?.token,
+  };
+
+  localStorage.setItem("user", JSON.stringify(mergedUser));
+
+  return mergedUser;
+}
+
 export function useProfile() {
   const navigate = useNavigate();
   const { state, dispatch } = useApp();
@@ -47,8 +72,10 @@ export function useProfile() {
       const res = await api.get("/profile/me");
       const mappedProfile = mapProfile(res.data);
 
+      const mergedUser = mergeUserData(mappedProfile, state.user);
+
       setProfile(mappedProfile);
-      dispatch({ type: "SET_USER", payload: mappedProfile });
+      dispatch({ type: "SET_USER", payload: mergedUser });
     } catch (err) {
       console.error(err);
 
@@ -95,8 +122,10 @@ export function useProfile() {
         photoUrl: uploadedUrl,
       };
 
+      const mergedUser = mergeUserData(updatedProfile, state.user);
+
       setProfile(updatedProfile);
-      dispatch({ type: "SET_USER", payload: updatedProfile });
+      dispatch({ type: "SET_USER", payload: mergedUser });
       setShowAvatarMenu(false);
     } catch (err) {
       console.error(err);
@@ -122,8 +151,10 @@ export function useProfile() {
         photoUrl: null,
       };
 
+      const mergedUser = mergeUserData(updatedProfile, state.user);
+
       setProfile(updatedProfile);
-      dispatch({ type: "SET_USER", payload: updatedProfile });
+      dispatch({ type: "SET_USER", payload: mergedUser });
       setShowAvatarMenu(false);
     } catch (err) {
       console.error(err);

@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import AppLayout from "../components/layout/AppLayout";
+
 import WelcomeScreen from "../pages/WelcomeScreen";
 import Register from "../pages/Register";
 import Login from "../pages/Login";
@@ -9,6 +10,7 @@ import Translate from "../pages/Translate";
 import Dictionary from "../pages/Dictionary";
 import Learning from "../pages/Learning";
 import Quiz from "../pages/Quiz";
+import QuizQuestionManager from "../pages/QuizQuestionManager";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
 
@@ -31,8 +33,14 @@ export const router = createBrowserRouter([
         ],
       },
 
-      // Protected, tapi tanpa AppLayout / BottomNav
+      // Protected tanpa BottomNav
       { path: "/quiz/:id", element: <Quiz /> },
+
+      {
+        path: "/learning/packages/:packageId/questions",
+        element: <QuizQuestionManager />,
+      },
+
       { path: "/settings", element: <Settings /> },
     ],
   },

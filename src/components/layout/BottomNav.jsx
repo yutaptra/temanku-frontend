@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { BookOpen, GraduationCap, Home, Languages, User } from "lucide-react";
 import { useDarkMode } from "../../hooks/useDarkMode";
 
-const iconClass = "w-[22px] h-[22px]";
+const iconClass = "w-5 h-5";
 
 const NAV_ITEMS = [
   { to: "/home", label: "Beranda", Icon: Home },
@@ -25,7 +25,7 @@ export default function BottomNav() {
         ${dk.nav}
       `}
     >
-      <div className="grid grid-cols-5 items-center px-1 pt-2 pb-3">
+      <div className="grid grid-cols-5 items-center px-1 pt-1.5 pb-2">
         {NAV_ITEMS.map(({ to, label, Icon }) => {
           const isActive = location.pathname === to;
 
@@ -41,7 +41,7 @@ export default function BottomNav() {
             >
               <Icon className={iconClass} strokeWidth={2} />
 
-              <span className="text-[11px] font-semibold leading-tight">
+              <span className="text-[10px] font-medium leading-tight">
                 {label}
               </span>
             </NavLink>
