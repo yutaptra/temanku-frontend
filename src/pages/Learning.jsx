@@ -1,4 +1,4 @@
-import { ClipboardList, Sparkles, Target } from "lucide-react";
+import { ClipboardList, Plus, Sparkles, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { useDarkMode } from "../hooks/useDarkMode";
@@ -7,6 +7,8 @@ import { useLearning } from "../hooks/useLearning";
 import MetricCard from "../components/learning/MetricCard";
 import QuizCard from "../components/learning/QuizCard";
 import QuizModal from "../components/learning/QuizModal";
+import QuizFormModal from "../components/learning/QuizFormModal";
+import DeleteQuizModal from "../components/learning/DeleteQuizModal";
 import LoadingCard from "../components/learning/LoadingCard";
 import InfoState from "../components/learning/InfoState";
 
@@ -33,8 +35,31 @@ export default function Learning() {
     selectedQuiz,
     setSelectedQuiz,
 
+    showAddModal,
+    openAddModal,
+    closeAddModal,
+    addForm,
+    setAddForm,
+    addError,
+    handleAddQuiz,
+
+    editTarget,
+    openEditModal,
+    closeEditModal,
+    editForm,
+    setEditForm,
+    editError,
+    handleEditQuiz,
+
+    deleteTarget,
+    setDeleteTarget,
+    closeDeleteModal,
+    handleDeleteQuiz,
+
     isLoading,
+    isSubmitting,
     error,
+    success,
 
     fetchQuizzes,
   } = useLearning();
@@ -88,6 +113,31 @@ export default function Learning() {
           ))}
         </div>
 
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={openAddModal}
+            className="
+              w-full flex items-center justify-center gap-2
+              py-3 rounded-2xl font-semibold text-white text-sm
+              active:scale-95 transition-transform
+            "
+            style={{
+              background: "linear-gradient(135deg,#3B7DFF,#1A5FE8)",
+              boxShadow: "0 4px 14px rgba(59,125,255,0.35)",
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            Tambah Paket Kuis
+          </button>
+        )}
+
+        {success && (
+          <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
+            <p className="text-green-600 text-sm font-semibold">{success}</p>
+          </div>
+        )}
+
         <div className="flex flex-col gap-3">
           {isLoading ? (
             <>
@@ -120,6 +170,8 @@ export default function Learning() {
                 dk={dk}
                 isAdmin={isAdmin}
                 onPress={setSelectedQuiz}
+                onEdit={openEditModal}
+                onDelete={setDeleteTarget}
                 onManageQuestions={handleManageQuestions}
               />
             ))
@@ -133,6 +185,44 @@ export default function Learning() {
         onConfirm={handleStartQuiz}
         dk={dk}
       />
+
+      {showAddModal && (
+        <QuizFormModal
+          title="Tambah Paket Kuis"
+          submitText="Simpan Paket"
+          form={addForm}
+          setForm={setAddForm}
+          error={addError}
+          onClose={closeAddModal}
+          onSubmit={handleAddQuiz}
+          isSubmitting={isSubmitting}
+          dk={dk}
+        />
+      )}
+
+      {editTarget && (
+        <QuizFormModal
+          title="Edit Paket Kuis"
+          submitText="Simpan Perubahan"
+          form={editForm}
+          setForm={setEditForm}
+          error={editError}
+          onClose={closeEditModal}
+          onSubmit={handleEditQuiz}
+          isSubmitting={isSubmitting}
+          dk={dk}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteQuizModal
+          dk={dk}
+          quiz={deleteTarget}
+          isSubmitting={isSubmitting}
+          onClose={closeDeleteModal}
+          onConfirm={() => handleDeleteQuiz(deleteTarget)}
+        />
+      )}
     </div>
   );
 }

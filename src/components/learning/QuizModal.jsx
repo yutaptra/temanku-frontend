@@ -48,22 +48,24 @@ export default function QuizModal({ quiz, onClose, onConfirm, dk }) {
     ["Durasi Estimasi", quiz.duration],
     ["Jumlah Soal", quiz.count],
     ["Tipe Soal", quiz.questionType],
-    ["Status", isDone ? "Selesai" : "Belum dikerjakan"],
   ];
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: "rgba(0,0,0,0.45)" }}
+      className="
+      fixed inset-0 z-50
+      flex items-center justify-center
+      bg-black/45 px-3 py-4"
       onClick={onClose}
     >
       <div
         className={`
           ${dk.card}
-          border w-full max-w-mobile rounded-t-3xl
-          px-5 pt-4 pb-10 relative
-        `}
-        style={{ animation: "slideUp .25s ease-out" }}
+          border w-full max-w-md sm:max-w-lg
+          rounded-3xl px-5 pt-5 pb-5 relative
+          max-h-[calc(100vh-8rem)] overflow-y-auto
+          `}
+        style={{ animation: "popIn .2s ease-out" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative mb-5">
@@ -136,7 +138,7 @@ export default function QuizModal({ quiz, onClose, onConfirm, dk }) {
           }}
         >
           <Play className="w-5 h-5 fill-white" />
-          {isDone ? "Tinjau Kuis" : "Mulai Kuis"}
+          Mulai Kuis
         </button>
 
         <button
@@ -152,11 +154,17 @@ export default function QuizModal({ quiz, onClose, onConfirm, dk }) {
         </button>
 
         <style>{`
-          @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-          }
-        `}</style>
+          @keyframes popIn {
+            from {
+              opacity: 0;
+              transform: scale(0.96) translateY(8px);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1) translateY(0);
+           }
+         }
+       `}</style>
       </div>
     </div>
   );

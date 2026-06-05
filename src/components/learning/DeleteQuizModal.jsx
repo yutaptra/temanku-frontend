@@ -15,11 +15,11 @@ export default function DeleteQuizModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className={`font-display font-bold ${dk.textPrimary} text-xl mb-2`}>
-          Hapus Soal?
+          Hapus Paket?
         </h2>
 
         <p className={`${dk.textSecondary} text-sm leading-relaxed mb-5`}>
-          Soal <b>{quiz?.title}</b> akan dihapus permanen. Tindakan ini tidak
+          Paket <b>{quiz?.title}</b> akan dihapus permanen. Tindakan ini tidak
           bisa dibatalkan.
         </p>
 

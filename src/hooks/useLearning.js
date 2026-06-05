@@ -1,15 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 
-export const EMPTY_QUIZ_FORM = {
+export const EMPTY_PACKAGE_FORM = {
   id: null,
-  question_text: "",
-  answer: "",
-  option_a: "",
-  option_b: "",
-  option_c: "",
-  option_d: "",
-  file: null,
+  title: "",
+  description: "",
+  difficulty: "easy",
 };
 
 const DIFFICULTY_LABEL = {
@@ -18,9 +14,24 @@ const DIFFICULTY_LABEL = {
   hard: "Sulit",
 };
 
-function getDifficultyLabel(category) {
-  const key = String(category || "easy").toLowerCase();
-  return DIFFICULTY_LABEL[key] || category || "Mudah";
+function getDifficultyLabel(difficulty) {
+  const key = String(difficulty || "easy").toLowerCase();
+
+  return DIFFICULTY_LABEL[key] || difficulty || "Mudah";
+}
+
+function getDuration(totalQuestions, difficulty) {
+  const secondsPerQuestion = {
+    easy: 30,
+    medium: 45,
+    hard: 60,
+  };
+
+  const totalSeconds = (secondsPerQuestion[difficulty] || 45) * totalQuestions;
+
+  const minutes = Math.ceil(totalSeconds / 60);
+
+  return `± ${minutes} mnt`;
 }
 
 function getErrorMessage(err, fallback) {
@@ -33,41 +44,19 @@ function getErrorMessage(err, fallback) {
   return fallback;
 }
 
-function buildQuizFormData(form) {
-  const formData = new FormData();
-
-  formData.append("question_text", form.question_text.trim());
-  formData.append("answer", form.answer.trim());
-  formData.append("option_a", form.option_a.trim());
-  formData.append("option_b", form.option_b.trim());
-  formData.append("option_c", form.option_c.trim());
-  formData.append("option_d", form.option_d.trim());
-
-  if (form.file) {
-    formData.append("file", form.file);
-  }
-
-  return formData;
-}
-
-function validateQuizForm(form, setFormError, requireFile = false) {
-  if (!form.question_text.trim()) {
-    setFormError("Pertanyaan tidak boleh kosong.");
+function validatePackageForm(form, setFormError) {
+  if (!form.title.trim()) {
+    setFormError("Judul paket tidak boleh kosong.");
     return false;
   }
 
-  if (!form.answer.trim()) {
-    setFormError("Jawaban benar tidak boleh kosong.");
+  if (!form.description.trim()) {
+    setFormError("Deskripsi paket tidak boleh kosong.");
     return false;
   }
 
-  if (!form.option_a.trim() || !form.option_b.trim()) {
-    setFormError("Minimal pilihan A dan B wajib diisi.");
-    return false;
-  }
-
-  if (requireFile && !form.file) {
-    setFormError("Gambar soal wajib dipilih.");
+  if (!form.difficulty) {
+    setFormError("Tingkat kesulitan wajib dipilih.");
     return false;
   }
 
@@ -80,11 +69,11 @@ export function useLearning() {
   const [selectedQuiz, setSelectedQuiz] = useState(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addForm, setAddForm] = useState(EMPTY_QUIZ_FORM);
+  const [addForm, setAddForm] = useState(EMPTY_PACKAGE_FORM);
   const [addError, setAddError] = useState("");
 
   const [editTarget, setEditTarget] = useState(null);
-  const [editForm, setEditForm] = useState(EMPTY_QUIZ_FORM);
+  const [editForm, setEditForm] = useState(EMPTY_PACKAGE_FORM);
   const [editError, setEditError] = useState("");
 
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -104,8 +93,8 @@ export function useLearning() {
         icon: "sparkles",
       },
       {
-        id: "questions",
-        label: "Jumlah Soal",
+        id: "packages",
+        label: "Paket Kuis",
         value: quizzes.length,
         icon: "clipboard",
       },
@@ -133,20 +122,20 @@ export function useLearning() {
 
       const mappedQuizzes = result.data.map((item) => ({
         id: item.id,
-        title: item.title,
-        description: item.description,
+        title: item.title || "Paket Kuis",
+        description: item.description || "Deskripsi paket belum tersedia.",
         difficulty: getDifficultyLabel(item.difficulty),
-        rawCategory: item.difficulty,
-        duration: "± 5 mnt",
+        rawCategory: item.difficulty || "easy",
+        duration: getDuration(item.total_questions || 0, item.difficulty),
         count: `${item.total_questions || 0} soal`,
-        status: "belum",
         questionType: "Pilihan Ganda",
+        totalQuestions: item.total_questions || 0,
         raw: item,
       }));
 
       setQuizzes(mappedQuizzes);
     } catch (err) {
-      setError(err?.message || "Terjadi kesalahan saat memuat data kuis.");
+      setError(err?.message || "Terjadi kesalahan saat memuat paket kuis.");
     } finally {
       setIsLoading(false);
     }
@@ -158,14 +147,16 @@ export function useLearning() {
 
   function openAddModal() {
     setAddError("");
-    setAddForm(EMPTY_QUIZ_FORM);
+    setAddForm(EMPTY_PACKAGE_FORM);
     setShowAddModal(true);
   }
 
   function closeAddModal() {
     if (isSubmitting) return;
+
     setShowAddModal(false);
     setAddError("");
+    setAddForm(EMPTY_PACKAGE_FORM);
   }
 
   async function handleAddQuiz(e) {
@@ -173,56 +164,56 @@ export function useLearning() {
 
     setAddError("");
 
-    if (!validateQuizForm(addForm, setAddError, true)) return;
+    if (!validatePackageForm(addForm, setAddError)) return;
 
     setIsSubmitting(true);
     setSuccess("");
 
     try {
-      const formData = buildQuizFormData(addForm);
+      const payload = new URLSearchParams();
 
-      await api.post("/quiz/questions", formData, {
+      payload.append("title", addForm.title.trim());
+      payload.append("description", addForm.description.trim());
+      payload.append("difficulty", addForm.difficulty);
+
+      await api.post("/quiz/packages", payload, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/x-www-form-urlencoded",
         },
       });
 
       setShowAddModal(false);
-      setAddForm(EMPTY_QUIZ_FORM);
-      setSuccess("Soal kuis berhasil ditambahkan.");
+      setAddForm(EMPTY_PACKAGE_FORM);
+      setSuccess("Paket kuis berhasil ditambahkan.");
 
       await fetchQuizzes();
 
       setTimeout(() => setSuccess(""), 2500);
     } catch (err) {
       console.error(err);
-      setAddError(getErrorMessage(err, "Gagal menambahkan soal kuis."));
+      setAddError(getErrorMessage(err, "Gagal menambahkan paket kuis."));
     } finally {
       setIsSubmitting(false);
     }
   }
 
   function openEditModal(quiz) {
-    const options = quiz.options || [];
-
     setEditError("");
     setEditTarget(quiz);
     setEditForm({
       id: quiz.id,
-      question_text: quiz.description || "",
-      answer: quiz.answer || "",
-      option_a: options[0] || "",
-      option_b: options[1] || "",
-      option_c: options[2] || "",
-      option_d: options[3] || "",
-      file: null,
+      title: quiz.raw?.title || quiz.title || "",
+      description: quiz.raw?.description || quiz.description || "",
+      difficulty: quiz.raw?.difficulty || quiz.rawCategory || "easy",
     });
   }
 
   function closeEditModal() {
     if (isSubmitting) return;
+
     setEditTarget(null);
     setEditError("");
+    setEditForm(EMPTY_PACKAGE_FORM);
   }
 
   async function handleEditQuiz(e) {
@@ -230,30 +221,34 @@ export function useLearning() {
 
     setEditError("");
 
-    if (!validateQuizForm(editForm, setEditError, false)) return;
+    if (!validatePackageForm(editForm, setEditError)) return;
 
     setIsSubmitting(true);
     setSuccess("");
 
     try {
-      const formData = buildQuizFormData(editForm);
+      const payload = new URLSearchParams();
 
-      await api.put(`/quiz/questions/${editForm.id}`, formData, {
+      payload.append("title", editForm.title.trim());
+      payload.append("description", editForm.description.trim());
+      payload.append("difficulty", editForm.difficulty);
+
+      await api.put(`/quiz/packages/${editForm.id}`, payload, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/x-www-form-urlencoded",
         },
       });
 
       setEditTarget(null);
-      setEditForm(EMPTY_QUIZ_FORM);
-      setSuccess("Soal kuis berhasil diperbarui.");
+      setEditForm(EMPTY_PACKAGE_FORM);
+      setSuccess("Paket kuis berhasil diperbarui.");
 
       await fetchQuizzes();
 
       setTimeout(() => setSuccess(""), 2500);
     } catch (err) {
       console.error(err);
-      setEditError(getErrorMessage(err, "Gagal memperbarui soal kuis."));
+      setEditError(getErrorMessage(err, "Gagal memperbarui paket kuis."));
     } finally {
       setIsSubmitting(false);
     }
@@ -261,6 +256,7 @@ export function useLearning() {
 
   function closeDeleteModal() {
     if (isSubmitting) return;
+
     setDeleteTarget(null);
   }
 
@@ -270,17 +266,17 @@ export function useLearning() {
     setSuccess("");
 
     try {
-      await api.delete(`/quiz/questions/${quiz.id}`);
+      await api.delete(`/quiz/packages/${quiz.id}`);
 
       setDeleteTarget(null);
-      setSuccess("Soal kuis berhasil dihapus.");
+      setSuccess("Paket kuis berhasil dihapus.");
 
       await fetchQuizzes();
 
       setTimeout(() => setSuccess(""), 2500);
     } catch (err) {
       console.error(err);
-      setError(getErrorMessage(err, "Gagal menghapus soal kuis."));
+      setError(getErrorMessage(err, "Gagal menghapus paket kuis."));
     } finally {
       setIsSubmitting(false);
     }

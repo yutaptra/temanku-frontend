@@ -1,9 +1,17 @@
-import { CheckCircle2, ClipboardList, ListChecks, Play } from "lucide-react";
+import {
+  CheckCircle2,
+  ClipboardList,
+  ListChecks,
+  Pencil,
+  Play,
+  Trash2,
+} from "lucide-react";
 
 const DIFFICULTY_STYLE = {
   easy: "bg-green-100 text-green-700",
   medium: "bg-yellow-100 text-yellow-700",
   hard: "bg-red-100 text-red-600",
+
   mudah: "bg-green-100 text-green-700",
   sedang: "bg-yellow-100 text-yellow-700",
   sulit: "bg-red-100 text-red-600",
@@ -41,6 +49,8 @@ function IconCard({ done = false }) {
 export default function QuizCard({
   quiz,
   onPress,
+  onEdit,
+  onDelete,
   onManageQuestions,
   isAdmin,
   dk,
@@ -57,16 +67,6 @@ export default function QuizCard({
             <h3 className={`font-bold ${dk.textPrimary} text-base`}>
               {quiz.title}
             </h3>
-
-            <span
-              className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
-                isDone
-                  ? "bg-green-100 text-green-700"
-                  : "bg-primary-100 text-primary-700"
-              }`}
-            >
-              {isDone ? "Selesai" : "Belum"}
-            </span>
           </div>
 
           <p className={`${dk.textSecondary} text-xs leading-snug`}>
@@ -108,23 +108,52 @@ export default function QuizCard({
           }}
         >
           <Play className="w-4 h-4 fill-white" />
-          {isDone ? "Tinjau" : "Mulai"}
+          Mulai
         </button>
 
         {isAdmin && (
-          <button
-            type="button"
-            onClick={() => onManageQuestions(quiz)}
-            className={`
-              ${dk.cardInner}
-              flex items-center gap-2 px-4 py-2 rounded-xl border
-              font-semibold text-sm ${dk.textPrimary}
-              active:scale-95 transition-transform
-            `}
-          >
-            <ListChecks className="w-4 h-4" />
-            Kelola Soal
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => onEdit(quiz)}
+              className={`
+                ${dk.cardInner}
+                flex items-center gap-2 px-4 py-2 rounded-xl border
+                font-semibold text-sm ${dk.textPrimary}
+                active:scale-95 transition-transform
+              `}
+            >
+              <Pencil className="w-4 h-4" />
+              Edit Paket
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onManageQuestions(quiz)}
+              className={`
+                ${dk.cardInner}
+                flex items-center gap-2 px-4 py-2 rounded-xl border
+                font-semibold text-sm ${dk.textPrimary}
+                active:scale-95 transition-transform
+              `}
+            >
+              <ListChecks className="w-4 h-4" />
+              Kelola Soal
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onDelete(quiz)}
+              className="
+                flex items-center gap-2 px-4 py-2 rounded-xl
+                font-semibold text-sm text-white
+                bg-red-500 active:scale-95 transition-transform
+              "
+            >
+              <Trash2 className="w-4 h-4" />
+              Hapus Paket
+            </button>
+          </>
         )}
       </div>
     </div>
