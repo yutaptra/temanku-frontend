@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import api from "../services/api";
 
 export const EMPTY_PACKAGE_FORM = {
@@ -16,7 +16,6 @@ const DIFFICULTY_LABEL = {
 
 function getDifficultyLabel(difficulty) {
   const key = String(difficulty || "easy").toLowerCase();
-
   return DIFFICULTY_LABEL[key] || difficulty || "Mudah";
 }
 
@@ -28,7 +27,6 @@ function getDuration(totalQuestions, difficulty) {
   };
 
   const totalSeconds = (secondsPerQuestion[difficulty] || 45) * totalQuestions;
-
   const minutes = Math.ceil(totalSeconds / 60);
 
   return `± ${minutes} mnt`;
@@ -84,29 +82,31 @@ export function useLearning() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const metrics = useMemo(
-    () => [
-      {
-        id: "exp",
-        label: "Poin EXP",
-        value: quizzes.length * 10,
-        icon: "sparkles",
-      },
-      {
-        id: "packages",
-        label: "Paket Kuis",
-        value: quizzes.length,
-        icon: "clipboard",
-      },
-      {
-        id: "completion",
-        label: "Penyelesaian",
-        value: "0%",
-        icon: "target",
-      },
-    ],
-    [quizzes.length],
-  );
+  const successTimerRef = useRef(null);
+
+  const showSuccess = useCallback((msg) => {
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    setSuccess(msg);
+    successTimerRef.current = setTimeout(() => setSuccess(""), 2500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
+
+  const metrics = useMemo(() => {
+    const mudah = quizzes.filter((q) => q.rawCategory === "easy").length;
+    const sedang = quizzes.filter((q) => q.rawCategory === "medium").length;
+    const sulit = quizzes.filter((q) => q.rawCategory === "hard").length;
+
+    return [
+      { id: "easy", label: "Mudah", value: mudah, icon: "easy" },
+      { id: "medium", label: "Sedang", value: sedang, icon: "medium" },
+      { id: "hard", label: "Sulit", value: sulit, icon: "hard" },
+    ];
+  }, [quizzes]);
 
   const fetchQuizzes = useCallback(async () => {
     try {
@@ -122,7 +122,7 @@ export function useLearning() {
 
       const mappedQuizzes = result.data.map((item) => ({
         id: item.id,
-        title: item.title || "Paket Kuis",
+        title: item.title || "Paket Belajar",
         description: item.description || "Deskripsi paket belum tersedia.",
         difficulty: getDifficultyLabel(item.difficulty),
         rawCategory: item.difficulty || "easy",
@@ -135,7 +135,7 @@ export function useLearning() {
 
       setQuizzes(mappedQuizzes);
     } catch (err) {
-      setError(err?.message || "Terjadi kesalahan saat memuat paket kuis.");
+      setError(err?.message || "Terjadi kesalahan saat memuat paket belajar.");
     } finally {
       setIsLoading(false);
     }
@@ -153,7 +153,6 @@ export function useLearning() {
 
   function closeAddModal() {
     if (isSubmitting) return;
-
     setShowAddModal(false);
     setAddError("");
     setAddForm(EMPTY_PACKAGE_FORM);
@@ -161,37 +160,30 @@ export function useLearning() {
 
   async function handleAddQuiz(e) {
     e.preventDefault();
-
     setAddError("");
 
     if (!validatePackageForm(addForm, setAddError)) return;
 
     setIsSubmitting(true);
-    setSuccess("");
 
     try {
       const payload = new URLSearchParams();
-
       payload.append("title", addForm.title.trim());
       payload.append("description", addForm.description.trim());
       payload.append("difficulty", addForm.difficulty);
 
       await api.post("/quiz/packages", payload, {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
       setShowAddModal(false);
       setAddForm(EMPTY_PACKAGE_FORM);
-      setSuccess("Paket kuis berhasil ditambahkan.");
+      showSuccess("Paket belajar berhasil ditambahkan.");
 
       await fetchQuizzes();
-
-      setTimeout(() => setSuccess(""), 2500);
     } catch (err) {
       console.error(err);
-      setAddError(getErrorMessage(err, "Gagal menambahkan paket kuis."));
+      setAddError(getErrorMessage(err, "Gagal menambahkan paket belajar."));
     } finally {
       setIsSubmitting(false);
     }
@@ -210,7 +202,6 @@ export function useLearning() {
 
   function closeEditModal() {
     if (isSubmitting) return;
-
     setEditTarget(null);
     setEditError("");
     setEditForm(EMPTY_PACKAGE_FORM);
@@ -218,37 +209,30 @@ export function useLearning() {
 
   async function handleEditQuiz(e) {
     e.preventDefault();
-
     setEditError("");
 
     if (!validatePackageForm(editForm, setEditError)) return;
 
     setIsSubmitting(true);
-    setSuccess("");
 
     try {
       const payload = new URLSearchParams();
-
       payload.append("title", editForm.title.trim());
       payload.append("description", editForm.description.trim());
       payload.append("difficulty", editForm.difficulty);
 
       await api.put(`/quiz/packages/${editForm.id}`, payload, {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
       setEditTarget(null);
       setEditForm(EMPTY_PACKAGE_FORM);
-      setSuccess("Paket kuis berhasil diperbarui.");
+      showSuccess("Paket belajar berhasil diperbarui.");
 
       await fetchQuizzes();
-
-      setTimeout(() => setSuccess(""), 2500);
     } catch (err) {
       console.error(err);
-      setEditError(getErrorMessage(err, "Gagal memperbarui paket kuis."));
+      setEditError(getErrorMessage(err, "Gagal memperbarui paket belajar."));
     } finally {
       setIsSubmitting(false);
     }
@@ -256,27 +240,23 @@ export function useLearning() {
 
   function closeDeleteModal() {
     if (isSubmitting) return;
-
     setDeleteTarget(null);
   }
 
   async function handleDeleteQuiz(quiz) {
     setIsSubmitting(true);
     setError("");
-    setSuccess("");
 
     try {
       await api.delete(`/quiz/packages/${quiz.id}`);
 
       setDeleteTarget(null);
-      setSuccess("Paket kuis berhasil dihapus.");
+      showSuccess("Paket belajar berhasil dihapus.");
 
       await fetchQuizzes();
-
-      setTimeout(() => setSuccess(""), 2500);
     } catch (err) {
       console.error(err);
-      setError(getErrorMessage(err, "Gagal menghapus paket kuis."));
+      setError(getErrorMessage(err, "Gagal menghapus paket belajar."));
     } finally {
       setIsSubmitting(false);
     }

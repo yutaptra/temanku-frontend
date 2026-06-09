@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import api from "../services/api";
 import {
   getErrorMessage,
@@ -6,12 +6,36 @@ import {
   sortDictionary,
 } from "../utils/dictionaryUtils";
 
-const initialForm = {
+export const EMPTY_DICTIONARY_FORM = {
   name: "",
   description: "",
   category: "Kosakata",
   file: null,
 };
+
+export const EMPTY_EDIT_DICTIONARY_FORM = {
+  id: null,
+  ...EMPTY_DICTIONARY_FORM,
+};
+
+function validateDictionaryForm(form, setFormError, isEdit = false) {
+  if (!form.name.trim()) {
+    setFormError("Nama isyarat tidak boleh kosong.");
+    return false;
+  }
+
+  if (!form.description.trim()) {
+    setFormError("Deskripsi tidak boleh kosong.");
+    return false;
+  }
+
+  if (!isEdit && !form.file) {
+    setFormError("Gambar isyarat wajib dipilih.");
+    return false;
+  }
+
+  return true;
+}
 
 export function useDictionary() {
   const [dictionary, setDictionary] = useState([]);
@@ -22,14 +46,11 @@ export function useDictionary() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addForm, setAddForm] = useState(initialForm);
+  const [addForm, setAddForm] = useState(EMPTY_DICTIONARY_FORM);
   const [addError, setAddError] = useState("");
 
   const [editTarget, setEditTarget] = useState(null);
-  const [editForm, setEditForm] = useState({
-    id: null,
-    ...initialForm,
-  });
+  const [editForm, setEditForm] = useState(EMPTY_EDIT_DICTIONARY_FORM);
   const [editError, setEditError] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
@@ -38,9 +59,7 @@ export function useDictionary() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  useEffect(() => {
-    fetchDictionary();
-  }, []);
+  const successTimerRef = useRef(null);
 
   const filteredDictionary = useMemo(() => {
     const keyword = searchQuery.toLowerCase().trim();
@@ -58,11 +77,27 @@ export function useDictionary() {
     });
   }, [dictionary, searchQuery, activeFilter]);
 
-  async function fetchDictionary() {
-    setIsLoading(true);
-    setError("");
+  const showSuccess = useCallback((message) => {
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
 
+    setSuccess(message);
+
+    successTimerRef.current = setTimeout(() => {
+      setSuccess("");
+    }, 2500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
+
+  const fetchDictionary = useCallback(async () => {
     try {
+      setIsLoading(true);
+      setError("");
+
       const res = await api.get("/dictionary/");
       const list = res.data?.data || [];
       const mappedData = list.map(mapDictionaryItem);
@@ -70,32 +105,28 @@ export function useDictionary() {
       setDictionary(sortDictionary(mappedData));
     } catch (err) {
       console.error(err);
-      setError("Gagal memuat data kamus.");
+      setError(getErrorMessage(err, "Gagal memuat data kamus."));
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
-  function showSuccess(message) {
-    setSuccess(message);
+  useEffect(() => {
+    fetchDictionary();
+  }, [fetchDictionary]);
 
-    setTimeout(() => {
-      setSuccess("");
-    }, 2500);
-  }
-
-  function resetAddForm() {
-    setAddForm(initialForm);
+  function openAddModal() {
     setAddError("");
+    setAddForm(EMPTY_DICTIONARY_FORM);
+    setShowAddModal(true);
   }
 
-  function resetEditForm() {
-    setEditTarget(null);
-    setEditError("");
-    setEditForm({
-      id: null,
-      ...initialForm,
-    });
+  function closeAddModal() {
+    if (isSubmitting) return;
+
+    setShowAddModal(false);
+    setAddError("");
+    setAddForm(EMPTY_DICTIONARY_FORM);
   }
 
   function handleAddChange(e) {
@@ -118,24 +149,11 @@ export function useDictionary() {
 
   async function handleAddDictionary(e) {
     e.preventDefault();
+    setAddError("");
 
-    if (!addForm.name.trim()) {
-      setAddError("Nama isyarat tidak boleh kosong.");
-      return;
-    }
-
-    if (!addForm.description.trim()) {
-      setAddError("Deskripsi tidak boleh kosong.");
-      return;
-    }
-
-    if (!addForm.file) {
-      setAddError("Gambar isyarat wajib dipilih.");
-      return;
-    }
+    if (!validateDictionaryForm(addForm, setAddError)) return;
 
     setIsSubmitting(true);
-    setAddError("");
     setSuccess("");
 
     try {
@@ -154,7 +172,7 @@ export function useDictionary() {
       });
 
       setShowAddModal(false);
-      resetAddForm();
+      setAddForm(EMPTY_DICTIONARY_FORM);
 
       showSuccess("Data kamus berhasil ditambahkan.");
       await fetchDictionary();
@@ -164,6 +182,27 @@ export function useDictionary() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function openEditModal(item) {
+    setEditError("");
+    setEditTarget(item);
+
+    setEditForm({
+      id: item.id,
+      name: item.name || "",
+      description: item.description || "",
+      category: item.category || "Kosakata",
+      file: null,
+    });
+  }
+
+  function closeEditModal() {
+    if (isSubmitting) return;
+
+    setEditTarget(null);
+    setEditError("");
+    setEditForm(EMPTY_EDIT_DICTIONARY_FORM);
   }
 
   function handleEditChange(e) {
@@ -184,34 +223,13 @@ export function useDictionary() {
     }));
   }
 
-  function openEditModal(item) {
-    setEditError("");
-    setEditTarget(item);
-
-    setEditForm({
-      id: item.id,
-      name: item.name || "",
-      description: item.description || "",
-      category: item.category || "Kosakata",
-      file: null,
-    });
-  }
-
   async function handleEditDictionary(e) {
     e.preventDefault();
+    setEditError("");
 
-    if (!editForm.name.trim()) {
-      setEditError("Nama isyarat tidak boleh kosong.");
-      return;
-    }
-
-    if (!editForm.description.trim()) {
-      setEditError("Deskripsi tidak boleh kosong.");
-      return;
-    }
+    if (!validateDictionaryForm(editForm, setEditError, true)) return;
 
     setIsSubmitting(true);
-    setEditError("");
     setSuccess("");
 
     try {
@@ -232,7 +250,8 @@ export function useDictionary() {
         },
       });
 
-      resetEditForm();
+      setEditTarget(null);
+      setEditForm(EMPTY_EDIT_DICTIONARY_FORM);
       setSelectedItem(null);
 
       showSuccess("Data kamus berhasil diperbarui.");
@@ -243,6 +262,12 @@ export function useDictionary() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function closeDeleteModal() {
+    if (isSubmitting) return;
+
+    setDeleteTarget(null);
   }
 
   async function handleDeleteDictionary(item) {
@@ -265,30 +290,6 @@ export function useDictionary() {
     }
   }
 
-  function openAddModal() {
-    resetAddForm();
-    setShowAddModal(true);
-  }
-
-  function closeAddModal() {
-    if (isSubmitting) return;
-
-    setShowAddModal(false);
-    resetAddForm();
-  }
-
-  function closeEditModal() {
-    if (isSubmitting) return;
-
-    resetEditForm();
-  }
-
-  function closeDeleteModal() {
-    if (isSubmitting) return;
-
-    setDeleteTarget(null);
-  }
-
   function closeDetail() {
     setSelectedItem(null);
   }
@@ -306,14 +307,11 @@ export function useDictionary() {
     setSelectedItem,
     closeDetail,
 
-    deleteTarget,
-    setDeleteTarget,
-    closeDeleteModal,
-
     showAddModal,
     openAddModal,
     closeAddModal,
     addForm,
+    setAddForm,
     addError,
     handleAddChange,
     handleAddFile,
@@ -323,17 +321,22 @@ export function useDictionary() {
     openEditModal,
     closeEditModal,
     editForm,
+    setEditForm,
     editError,
     handleEditChange,
     handleEditFile,
     handleEditDictionary,
+
+    deleteTarget,
+    setDeleteTarget,
+    closeDeleteModal,
+    handleDeleteDictionary,
 
     isLoading,
     isSubmitting,
     error,
     success,
 
-    handleDeleteDictionary,
     fetchDictionary,
   };
 }

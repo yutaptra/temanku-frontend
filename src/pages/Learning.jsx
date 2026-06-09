@@ -1,16 +1,35 @@
-import { ClipboardList, Plus, Sparkles, Target } from "lucide-react";
+import { Frown, Meh, Plus, Smile } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { useDarkMode } from "../hooks/useDarkMode";
 import { useLearning } from "../hooks/useLearning";
 
-import MetricCard from "../components/learning/MetricCard";
 import QuizCard from "../components/learning/QuizCard";
 import QuizModal from "../components/learning/QuizModal";
 import QuizFormModal from "../components/learning/QuizFormModal";
 import DeleteQuizModal from "../components/learning/DeleteQuizModal";
 import LoadingCard from "../components/learning/LoadingCard";
 import InfoState from "../components/learning/InfoState";
+
+function MetricCard({ label, value, icon, dk }) {
+  return (
+    <div
+      className={`${dk.card} flex-1 rounded-2xl border shadow-sm p-3 flex flex-col items-center gap-1.5`}
+    >
+      {icon}
+      <p
+        className={`${dk.textSecondary} text-[11px] font-medium text-center leading-tight`}
+      >
+        {label}
+      </p>
+      <p
+        className={`font-display font-extrabold ${dk.textPrimary} text-xl leading-none`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
 
 export default function Learning() {
   const navigate = useNavigate();
@@ -65,9 +84,9 @@ export default function Learning() {
   } = useLearning();
 
   const iconMap = {
-    sparkles: <Sparkles className="w-7 h-7 text-amber-500" />,
-    clipboard: <ClipboardList className="w-7 h-7 text-orange-500" />,
-    target: <Target className="w-7 h-7 text-green-500" />,
+    easy: <Smile className="w-7 h-7 text-green-500" />,
+    medium: <Meh className="w-7 h-7 text-amber-500" />,
+    hard: <Frown className="w-7 h-7 text-red-500" />,
   };
 
   function handleStartQuiz() {
@@ -128,7 +147,7 @@ export default function Learning() {
             }}
           >
             <Plus className="w-4 h-4" />
-            Tambah Paket Kuis
+            Tambah Paket
           </button>
         )}
 
@@ -147,7 +166,7 @@ export default function Learning() {
             </>
           ) : error ? (
             <InfoState
-              title="Gagal memuat paket kuis"
+              title="Gagal memuat paket belajar"
               message={error}
               buttonText="Coba Lagi"
               onClick={fetchQuizzes}
@@ -156,8 +175,8 @@ export default function Learning() {
             />
           ) : quizzes.length === 0 ? (
             <InfoState
-              title="Belum ada paket kuis"
-              message="Data paket kuis belum tersedia dari backend."
+              title="Belum ada paket belajar"
+              message="Data paket belajar belum tersedia dari backend."
               buttonText="Refresh"
               onClick={fetchQuizzes}
               dk={dk}
@@ -188,7 +207,7 @@ export default function Learning() {
 
       {showAddModal && (
         <QuizFormModal
-          title="Tambah Paket Kuis"
+          title="Tambah Paket"
           submitText="Simpan Paket"
           form={addForm}
           setForm={setAddForm}
@@ -202,8 +221,8 @@ export default function Learning() {
 
       {editTarget && (
         <QuizFormModal
-          title="Edit Paket Kuis"
-          submitText="Simpan Perubahan"
+          title="Edit Paket"
+          submitText="Simpan"
           form={editForm}
           setForm={setEditForm}
           error={editError}

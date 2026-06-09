@@ -78,10 +78,6 @@ export function useProfile() {
       dispatch({ type: "SET_USER", payload: mergedUser });
     } catch (err) {
       console.error(err);
-
-      if (err.response?.status === 401) {
-        handleLogout();
-      }
     }
   }
 

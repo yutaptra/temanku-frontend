@@ -31,6 +31,7 @@ export default function Quiz() {
   const dk = useDarkMode();
 
   const [questions, setQuestions] = useState([]);
+  const [quizTitle, setQuizTitle] = useState("Kuis");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [result, setResult] = useState(null);
@@ -45,7 +46,7 @@ export default function Quiz() {
 
   const fetchQuestions = useCallback(async () => {
     if (!id) {
-      setError("ID paket kuis tidak ditemukan.");
+      setError("ID paket belajar tidak ditemukan.");
       setIsLoading(false);
       return;
     }
@@ -53,17 +54,20 @@ export default function Quiz() {
       setIsLoading(true);
       setError("");
       const { data } = await api.get(`/quiz/public/${id}`);
+
       const list = Array.isArray(data?.data?.questions)
         ? data.data.questions
         : [];
       if (!data?.success || list.length === 0)
-        throw new Error("Belum ada soal untuk paket kuis ini.");
+        throw new Error("Belum ada soal untuk paket belajar ini.");
+
       setQuestions(list);
+      setQuizTitle(data.data?.title || "Kuis");
       setCurrentIndex(0);
       setSelectedAnswers({});
       setResult(null);
     } catch (err) {
-      setError(err?.message || "Gagal memuat soal kuis.");
+      setError(err?.message || "Gagal memuat soal.");
     } finally {
       setIsLoading(false);
     }
@@ -103,7 +107,7 @@ export default function Quiz() {
         };
 
         const { data } = await api.post("/quiz/submit", payload);
-        if (!data?.success) throw new Error("Gagal menyimpan hasil kuis.");
+        if (!data?.success) throw new Error("Gagal menyimpan hasil.");
 
         setResult({
           score: data.data?.score ?? 0,
@@ -133,7 +137,7 @@ export default function Quiz() {
           }}
         >
           <h1 className="font-display font-extrabold text-white text-2xl">
-            Hasil Kuis
+            Hasil {quizTitle}
           </h1>
           <p className="text-blue-100 text-sm mt-0.5">
             Sistem Isyarat Bahasa Indonesia
@@ -202,7 +206,7 @@ export default function Quiz() {
           <ArrowLeft size={22} />
         </button>
         <h1 className="font-display font-extrabold text-white text-2xl">
-          Kuis
+          {quizTitle}
         </h1>
         <p className="text-blue-100 text-sm mt-0.5">
           Sistem Isyarat Bahasa Indonesia
@@ -258,7 +262,7 @@ export default function Quiz() {
               >
                 <img
                   src={imageUrl}
-                  alt="Gambar soal kuis"
+                  alt="Gambar soal"
                   className="w-full max-h-72 object-contain"
                 />
               </div>

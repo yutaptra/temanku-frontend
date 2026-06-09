@@ -10,7 +10,7 @@ import Translate from "../pages/Translate";
 import Dictionary from "../pages/Dictionary";
 import Learning from "../pages/Learning";
 import Quiz from "../pages/Quiz";
-import QuizQuestionManager from "../pages/QuizQuestionManager";
+import QuestionManager from "../pages/QuestionManager";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
 
@@ -38,7 +38,7 @@ export const router = createBrowserRouter([
 
       {
         path: "/learning/packages/:packageId/questions",
-        element: <QuizQuestionManager />,
+        element: <QuestionManager />,
       },
 
       { path: "/settings", element: <Settings /> },

@@ -1,5 +1,3 @@
-import { X } from "lucide-react";
-
 export default function DictionaryFormModal({
   dk,
   title,
@@ -23,22 +21,13 @@ export default function DictionaryFormModal({
       <form
         onSubmit={onSubmit}
         className={`${dk.card} border w-full max-w-md rounded-3xl px-5 py-5`}
+        style={{ animation: "slideUp 0.3s ease-out both" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className={`font-display font-bold ${dk.textPrimary} text-xl`}>
             {title}
           </h2>
-
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={onClose}
-            className={`${dk.cardInner} w-10 h-10 border rounded-full flex items-center justify-center disabled:opacity-60`}
-            aria-label={`Tutup ${title}`}
-          >
-            <X className={`w-5 h-5 ${dk.textPrimary}`} />
-          </button>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -119,16 +108,36 @@ export default function DictionaryFormModal({
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-3.5 rounded-2xl font-semibold text-white text-sm disabled:opacity-60 active:scale-95 transition-transform"
-            style={{
-              background: "linear-gradient(135deg,#3B7DFF,#1A5FE8)",
-            }}
-          >
-            {isSubmitting ? loadingLabel : submitLabel}
-          </button>
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className={`
+                flex-1 py-3.5 rounded-2xl border font-semibold text-sm
+                transition-transform active:scale-95
+                disabled:opacity-60
+                ${dk.cardInner} ${dk.textPrimary}
+              `}
+            >
+              Batal
+            </button>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="
+                flex-1 py-3.5 rounded-2xl font-semibold
+                text-white text-sm disabled:opacity-60
+                active:scale-95 transition-transform
+              "
+              style={{
+                background: "linear-gradient(135deg,#3B7DFF,#1A5FE8)",
+              }}
+            >
+              {isSubmitting ? loadingLabel : submitLabel}
+            </button>
+          </div>
         </div>
       </form>
     </div>

@@ -1,4 +1,4 @@
-import { CheckCircle2, ClipboardList, Play, X } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 
 const DIFFICULTY_STYLE = {
   easy: "bg-green-100 text-green-700",
@@ -13,29 +13,6 @@ function getDifficultyStyle(category) {
   const key = String(category || "easy").toLowerCase();
 
   return DIFFICULTY_STYLE[key] || DIFFICULTY_STYLE.easy;
-}
-
-function IconCard({ done = false }) {
-  return (
-    <div
-      className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-        done ? "bg-green-100 text-green-500" : "text-white"
-      }`}
-      style={
-        done
-          ? undefined
-          : {
-              background: "linear-gradient(135deg, #3F88FF 0%, #176AC3 100%)",
-            }
-      }
-    >
-      {done ? (
-        <CheckCircle2 className="w-8 h-8" strokeWidth={2.3} />
-      ) : (
-        <ClipboardList className="w-7 h-7" strokeWidth={2.3} />
-      )}
-    </div>
-  );
 }
 
 export default function QuizModal({ quiz, onClose, onConfirm, dk }) {
@@ -69,22 +46,22 @@ export default function QuizModal({ quiz, onClose, onConfirm, dk }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative mb-5">
-          <button
-            type="button"
-            onClick={onClose}
-            className={`
-              absolute top-0 right-0
-              w-10 h-10 rounded-full border
-              flex items-center justify-center
-              active:scale-95 transition-transform
-              ${dk.cardInner}
-            `}
-          >
-            <X className="w-5 h-5" />
-          </button>
-
-          <div className="flex items-start gap-3 pr-14">
-            <IconCard done={isDone} />
+          <div className="flex items-start gap-3">
+            <div
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                isDone ? "bg-green-100 text-green-500" : "text-white"
+              }`}
+              style={
+                isDone
+                  ? undefined
+                  : {
+                      background:
+                        "linear-gradient(135deg, #3F88FF 0%, #176AC3 100%)",
+                    }
+              }
+            >
+              <ClipboardList className="w-7 h-7" strokeWidth={2.3} />
+            </div>
 
             <div>
               <h2
@@ -137,8 +114,7 @@ export default function QuizModal({ quiz, onClose, onConfirm, dk }) {
             boxShadow: "0 4px 14px rgba(63,136,255,0.4)",
           }}
         >
-          <Play className="w-5 h-5 fill-white" />
-          Mulai Kuis
+          Mulai {quiz.title}
         </button>
 
         <button

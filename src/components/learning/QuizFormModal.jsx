@@ -1,5 +1,3 @@
-import { X } from "lucide-react";
-
 export default function QuizFormModal({
   title,
   submitText,
@@ -37,26 +35,13 @@ export default function QuizFormModal({
           px-5 py-5
           max-h-[92vh] overflow-y-auto
         `}
+        style={{ animation: "popIn .25s ease-out both" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h2 className={`font-display font-bold ${dk.textPrimary} text-xl`}>
             {title}
           </h2>
-
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className={`
-              ${dk.cardInner}
-              w-10 h-10 border rounded-full
-              flex items-center justify-center
-              disabled:opacity-60
-            `}
-          >
-            <X className={`w-5 h-5 ${dk.textPrimary}`} />
-          </button>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -64,7 +49,7 @@ export default function QuizFormModal({
             name="title"
             value={form.title}
             onChange={handleChange}
-            placeholder="Judul paket kuis"
+            placeholder="Judul paket belajar"
             disabled={isSubmitting}
             className={`
               ${dk.input}
@@ -78,7 +63,7 @@ export default function QuizFormModal({
             name="description"
             value={form.description}
             onChange={handleChange}
-            placeholder="Deskripsi paket kuis"
+            placeholder="Deskripsi paket belajar"
             rows={3}
             disabled={isSubmitting}
             className={`
@@ -112,23 +97,53 @@ export default function QuizFormModal({
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="
-              w-full py-3.5 rounded-2xl
-              font-semibold text-white text-sm
-              disabled:opacity-60
-              active:scale-95 transition-transform
-            "
-            style={{
-              background: "linear-gradient(135deg,#3B7DFF,#1A5FE8)",
-            }}
-          >
-            {isSubmitting ? "Menyimpan..." : submitText}
-          </button>
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className={`
+                flex-1 py-3 rounded-2xl
+                font-semibold text-sm border
+                active:scale-95 transition-transform
+                disabled:opacity-60
+                ${dk.cardInner} ${dk.textPrimary}
+              `}
+            >
+              Batal
+            </button>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="
+                flex-1 py-3 rounded-2xl
+                font-semibold text-white text-sm
+                disabled:opacity-60
+                active:scale-95 transition-transform
+              "
+              style={{
+                background: "linear-gradient(135deg,#3B7DFF,#1A5FE8)",
+              }}
+            >
+              {isSubmitting ? "Menyimpan..." : submitText}
+            </button>
+          </div>
         </div>
       </form>
+
+      <style>{`
+        @keyframes popIn {
+          from {
+            transform: scale(0.92);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }
