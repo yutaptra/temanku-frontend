@@ -25,10 +25,7 @@ function isTokenExpired(token) {
 function clearSessionAndRedirect() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-
-  if (window.location.pathname !== "/login") {
-    window.location.replace("/login?session=expired");
-  }
+  window.dispatchEvent(new Event("session:expired"));
 }
 
 api.interceptors.request.use(

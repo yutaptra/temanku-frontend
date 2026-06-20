@@ -134,6 +134,17 @@ export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, undefined, getInitialState);
 
   useEffect(() => {
+    function handleSessionExpired() {
+      dispatch({ type: "LOGOUT" });
+      window.location.replace("/login?session=expired");
+    }
+
+    window.addEventListener("session:expired", handleSessionExpired);
+    return () =>
+      window.removeEventListener("session:expired", handleSessionExpired);
+  }, []);
+
+  useEffect(() => {
     try {
       const darkModeKey = getDarkModeKey(state.user);
 
