@@ -269,7 +269,7 @@ export default function QuestionManager() {
                 Belum ada soal
               </p>
               <p className={`${dk.textSecondary} text-sm mt-1`}>
-                Tambahkan soal pertama untuk paket belajar ini.
+                Tambahkan soal pertama untuk paket kuis ini.
               </p>
             </div>
           ) : (

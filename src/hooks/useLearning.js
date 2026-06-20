@@ -122,7 +122,7 @@ export function useLearning() {
 
       const mappedQuizzes = result.data.map((item) => ({
         id: item.id,
-        title: item.title || "Paket Belajar",
+        title: item.title || "Paket Kuis",
         description: item.description || "Deskripsi paket belum tersedia.",
         difficulty: getDifficultyLabel(item.difficulty),
         rawCategory: item.difficulty || "easy",
@@ -135,7 +135,7 @@ export function useLearning() {
 
       setQuizzes(mappedQuizzes);
     } catch (err) {
-      setError(err?.message || "Terjadi kesalahan saat memuat paket belajar.");
+      setError(err?.message || "Terjadi kesalahan saat memuat paket kuis.");
     } finally {
       setIsLoading(false);
     }
@@ -178,12 +178,12 @@ export function useLearning() {
 
       setShowAddModal(false);
       setAddForm(EMPTY_PACKAGE_FORM);
-      showSuccess("Paket belajar berhasil ditambahkan.");
+      showSuccess("Paket kuis berhasil ditambahkan.");
 
       await fetchQuizzes();
     } catch (err) {
       console.error(err);
-      setAddError(getErrorMessage(err, "Gagal menambahkan paket belajar."));
+      setAddError(getErrorMessage(err, "Gagal menambahkan paket kuis."));
     } finally {
       setIsSubmitting(false);
     }
@@ -227,12 +227,12 @@ export function useLearning() {
 
       setEditTarget(null);
       setEditForm(EMPTY_PACKAGE_FORM);
-      showSuccess("Paket belajar berhasil diperbarui.");
+      showSuccess("Paket kuis berhasil diperbarui.");
 
       await fetchQuizzes();
     } catch (err) {
       console.error(err);
-      setEditError(getErrorMessage(err, "Gagal memperbarui paket belajar."));
+      setEditError(getErrorMessage(err, "Gagal memperbarui paket kuis."));
     } finally {
       setIsSubmitting(false);
     }
@@ -251,12 +251,12 @@ export function useLearning() {
       await api.delete(`/quiz/packages/${quiz.id}`);
 
       setDeleteTarget(null);
-      showSuccess("Paket belajar berhasil dihapus.");
+      showSuccess("Paket kuis berhasil dihapus.");
 
       await fetchQuizzes();
     } catch (err) {
       console.error(err);
-      setError(getErrorMessage(err, "Gagal menghapus paket belajar."));
+      setError(getErrorMessage(err, "Gagal menghapus paket kuis."));
     } finally {
       setIsSubmitting(false);
     }

@@ -166,7 +166,7 @@ export default function Learning() {
             </>
           ) : error ? (
             <InfoState
-              title="Gagal memuat paket belajar"
+              title="Gagal memuat paket kuis"
               message={error}
               buttonText="Coba Lagi"
               onClick={fetchQuizzes}
@@ -175,8 +175,8 @@ export default function Learning() {
             />
           ) : quizzes.length === 0 ? (
             <InfoState
-              title="Belum ada paket belajar"
-              message="Data paket belajar belum tersedia dari backend."
+              title="Belum ada paket kuis"
+              message="Data paket kuis belum tersedia dari backend."
               buttonText="Refresh"
               onClick={fetchQuizzes}
               dk={dk}
@@ -208,7 +208,7 @@ export default function Learning() {
       {showAddModal && (
         <QuizFormModal
           title="Tambah Paket"
-          submitText="Simpan Paket"
+          submitText="Simpan"
           form={addForm}
           setForm={setAddForm}
           error={addError}

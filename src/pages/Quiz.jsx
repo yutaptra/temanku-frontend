@@ -46,7 +46,7 @@ export default function Quiz() {
 
   const fetchQuestions = useCallback(async () => {
     if (!id) {
-      setError("ID paket belajar tidak ditemukan.");
+      setError("ID paket kuis tidak ditemukan.");
       setIsLoading(false);
       return;
     }
@@ -59,7 +59,7 @@ export default function Quiz() {
         ? data.data.questions
         : [];
       if (!data?.success || list.length === 0)
-        throw new Error("Belum ada soal untuk paket belajar ini.");
+        throw new Error("Belum ada soal untuk paket kuis ini.");
 
       setQuestions(list);
       setQuizTitle(data.data?.title || "Kuis");

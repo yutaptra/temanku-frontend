@@ -5,6 +5,13 @@ import { useApp } from "../context/AppContext";
 import logo from "../assets/logo-temanku.svg";
 import api from "../services/api";
 
+const AUTH_BG_LIGHT = "linear-gradient(180deg, #F8FAFF 0%, #F0F4FF 100%)";
+const AUTH_BG_DARK = "linear-gradient(180deg, #0F172A 0%, #111827 100%)";
+const CARD_SHADOW_LIGHT =
+  "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 40px -8px rgba(59,125,255,0.12)";
+const CARD_SHADOW_DARK = "0 10px 30px rgba(0,0,0,0.35)";
+const BTN_GRADIENT = "linear-gradient(135deg, #176AC3 0%, #1F7DE3 100%)";
+
 function FormField({
   label,
   id,
@@ -15,6 +22,7 @@ function FormField({
   placeholder,
   rightElement,
   isDark,
+  disabled,
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -32,6 +40,7 @@ function FormField({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
+          disabled={disabled}
           autoComplete={
             name === "email"
               ? "email"
@@ -39,7 +48,7 @@ function FormField({
                 ? "name"
                 : "new-password"
           }
-          className={`w-full px-4 py-3 rounded-xl border text-sm ${rightElement ? "pr-11" : "pr-4"} outline-none transition-all duration-200 ${
+          className={`w-full px-4 py-3 rounded-xl border text-sm ${rightElement ? "pr-11" : "pr-4"} outline-none transition-all duration-200 disabled:opacity-70 ${
             isDark
               ? "border-neutral-700 bg-neutral-800 text-white placeholder-neutral-500 focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20"
               : "border-neutral-200 bg-neutral-50 text-neutral-800 placeholder-neutral-300 focus:border-primary-400 focus:bg-white focus:ring-2 focus:ring-primary-100"
@@ -55,12 +64,13 @@ function FormField({
   );
 }
 
-function EyeIcon({ open, onClick, isDark }) {
+function EyeIcon({ open, onClick, isDark, disabled }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`transition-colors ${isDark ? "text-neutral-500 hover:text-neutral-300" : "text-neutral-400 hover:text-neutral-600"}`}
+      disabled={disabled}
+      className={`transition-colors disabled:opacity-60 ${isDark ? "text-neutral-500 hover:text-neutral-300" : "text-neutral-400 hover:text-neutral-600"}`}
       aria-label={open ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
     >
       {open ? (
@@ -109,6 +119,17 @@ function PasswordStrength({ password, isDark }) {
   );
 }
 
+function validate(form) {
+  if (!form.name.trim()) return "Nama tidak boleh kosong.";
+  if (!form.email.trim()) return "Email tidak boleh kosong.";
+  if (!/\S+@\S+\.\S+/.test(form.email)) return "Format email tidak valid.";
+  if (!form.password) return "Kata sandi tidak boleh kosong.";
+  if (form.password.length < 8) return "Kata sandi minimal 8 karakter.";
+  if (form.password !== form.confirmPassword)
+    return "Konfirmasi kata sandi tidak cocok.";
+  return null;
+}
+
 export default function Register() {
   const navigate = useNavigate();
   const { state } = useApp();
@@ -125,32 +146,21 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function handleChange(e) {
+  const handleChange = (e) => {
     setError("");
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  }
-
-  function validate() {
-    if (!form.name.trim()) return "Nama tidak boleh kosong.";
-    if (!form.email.trim()) return "Email tidak boleh kosong.";
-    if (!/\S+@\S+\.\S+/.test(form.email)) return "Format email tidak valid.";
-    if (!form.password) return "Kata sandi tidak boleh kosong.";
-    if (form.password.length < 8) return "Kata sandi minimal 8 karakter.";
-    if (form.password !== form.confirmPassword)
-      return "Konfirmasi kata sandi tidak cocok.";
-    return null;
-  }
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const validationError = validate();
+    const validationError = validate(form);
     if (validationError) return setError(validationError);
 
     setIsLoading(true);
     setError("");
 
     try {
-      const res = await api.post("/signup", {
+      const { data } = await api.post("/signup", {
         full_name: form.name.trim(),
         password: form.password,
         email: form.email.trim(),
@@ -159,7 +169,6 @@ export default function Register() {
         last_name: "",
       });
 
-      const data = res.data;
       if (data.code === "400" || data.status === "Bad Request") {
         setError(data.message || "Pendaftaran gagal.");
         return;
@@ -171,7 +180,10 @@ export default function Register() {
       });
     } catch (err) {
       console.error(err);
-      const message = err.response?.data?.detail || "Pendaftaran gagal.";
+      const message =
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        "Pendaftaran gagal.";
       setError(typeof message === "string" ? message : "Pendaftaran gagal.");
     } finally {
       setIsLoading(false);
@@ -193,11 +205,7 @@ export default function Register() {
 
       <div
         className="min-h-screen w-full flex flex-col items-center justify-center px-5 py-8 transition-colors duration-300"
-        style={{
-          background: isDark
-            ? "linear-gradient(180deg, #0F172A 0%, #111827 100%)"
-            : "linear-gradient(180deg, #F8FAFF 0%, #F0F4FF 100%)",
-        }}
+        style={{ background: isDark ? AUTH_BG_DARK : AUTH_BG_LIGHT }}
       >
         {/* Logo */}
         <div
@@ -227,11 +235,7 @@ export default function Register() {
         >
           <div
             className={`rounded-3xl px-6 py-8 transition-colors duration-300 ${isDark ? "bg-neutral-900" : "bg-white"}`}
-            style={{
-              boxShadow: isDark
-                ? "0 10px 30px rgba(0,0,0,0.35)"
-                : "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 40px -8px rgba(59,125,255,0.12)",
-            }}
+            style={{ boxShadow: isDark ? CARD_SHADOW_DARK : CARD_SHADOW_LIGHT }}
           >
             <h1
               className={`font-bold text-xl text-center mb-6 ${isDark ? "text-white" : "text-neutral-800"}`}
@@ -252,7 +256,9 @@ export default function Register() {
                 onChange={handleChange}
                 placeholder="Nama lengkap kamu"
                 isDark={isDark}
+                disabled={isLoading}
               />
+
               <FormField
                 label="Email"
                 id="email"
@@ -262,7 +268,9 @@ export default function Register() {
                 onChange={handleChange}
                 placeholder="contoh@email.com"
                 isDark={isDark}
+                disabled={isLoading}
               />
+
               <FormField
                 label="Kata Sandi"
                 id="password"
@@ -272,15 +280,19 @@ export default function Register() {
                 onChange={handleChange}
                 placeholder="Minimal 8 karakter"
                 isDark={isDark}
+                disabled={isLoading}
                 rightElement={
                   <EyeIcon
                     open={showPassword}
                     onClick={() => setShowPassword((v) => !v)}
                     isDark={isDark}
+                    disabled={isLoading}
                   />
                 }
               />
+
               <PasswordStrength password={form.password} isDark={isDark} />
+
               <FormField
                 label="Konfirmasi Kata Sandi"
                 id="confirmPassword"
@@ -290,11 +302,13 @@ export default function Register() {
                 onChange={handleChange}
                 placeholder="Ulangi kata sandi"
                 isDark={isDark}
+                disabled={isLoading}
                 rightElement={
                   <EyeIcon
                     open={showConfirmPassword}
                     onClick={() => setShowConfirmPassword((v) => !v)}
                     isDark={isDark}
+                    disabled={isLoading}
                   />
                 }
               />
@@ -313,8 +327,7 @@ export default function Register() {
                 disabled={isLoading}
                 className="w-full py-3.5 rounded-xl font-semibold text-white text-sm transition-all duration-200 active:scale-95 mt-1 disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
                 style={{
-                  background:
-                    "linear-gradient(135deg, #176AC3 0%, #1F7DE3 100%)",
+                  background: BTN_GRADIENT,
                   boxShadow: isLoading
                     ? "none"
                     : "0 4px 14px rgba(23,106,195,0.4)",

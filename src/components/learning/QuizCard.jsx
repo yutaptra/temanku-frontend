@@ -3,7 +3,6 @@ import {
   ClipboardList,
   ListChecks,
   Pencil,
-  Play,
   Trash2,
 } from "lucide-react";
 
@@ -58,7 +57,10 @@ export default function QuizCard({
   const isDone = quiz.status === "selesai";
 
   return (
-    <div className={`${dk.card} rounded-2xl border shadow-sm p-4`}>
+    <div
+      className={`${dk.card} rounded-2xl border shadow-sm p-4 cursor-pointer active:scale-[0.99] transition-transform`}
+      onClick={() => onPress(quiz)}
+    >
       <div className="flex items-start gap-3 mb-3">
         <IconCard done={isDone} />
 
@@ -94,28 +96,14 @@ export default function QuizCard({
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        <button
-          type="button"
-          onClick={() => onPress(quiz)}
-          className="
-            flex items-center gap-2 px-5 py-2 rounded-xl
-            font-semibold text-sm text-white
-            active:scale-95 transition-all
-          "
-          style={{
-            background: "linear-gradient(135deg, #3F88FF 0%, #176AC3 100%)",
-            boxShadow: "0 3px 10px rgba(59,125,255,0.3)",
-          }}
-        >
-          <Play className="w-4 h-4 fill-white" />
-          Mulai
-        </button>
-
         {isAdmin && (
           <>
             <button
               type="button"
-              onClick={() => onEdit(quiz)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(quiz);
+              }}
               className={`
                 ${dk.cardInner}
                 flex items-center gap-2 px-4 py-2 rounded-xl border
@@ -129,7 +117,10 @@ export default function QuizCard({
 
             <button
               type="button"
-              onClick={() => onManageQuestions(quiz)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onManageQuestions(quiz);
+              }}
               className={`
                 ${dk.cardInner}
                 flex items-center gap-2 px-4 py-2 rounded-xl border
@@ -143,7 +134,10 @@ export default function QuizCard({
 
             <button
               type="button"
-              onClick={() => onDelete(quiz)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(quiz);
+              }}
               className="
                 flex items-center gap-2 px-4 py-2 rounded-xl
                 font-semibold text-sm text-white

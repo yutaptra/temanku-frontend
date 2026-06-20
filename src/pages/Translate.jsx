@@ -3,7 +3,6 @@ import { Camera, Languages, Square, LoaderCircle } from "lucide-react";
 import { useDarkMode } from "../hooks/useDarkMode";
 
 const WS_URL = import.meta.env.VITE_WS_PREDICT_URL;
-
 const FRAME_INTERVAL_MS = 300;
 
 const STATUS = {
@@ -13,6 +12,40 @@ const STATUS = {
   STOPPING: "stopping",
   ERROR: "error",
 };
+
+const STATUS_CONFIG = {
+  [STATUS.IDLE]: {
+    color:
+      "bg-neutral-200 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300",
+    dot: "bg-neutral-400",
+    label: "Siap",
+  },
+  [STATUS.CONNECTING]: {
+    color:
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
+    dot: "bg-yellow-400",
+    label: "Menghubungkan…",
+  },
+  [STATUS.ACTIVE]: {
+    color:
+      "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+    dot: "bg-green-500",
+    label: "Live",
+  },
+  [STATUS.STOPPING]: {
+    color:
+      "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300",
+    dot: "bg-neutral-400",
+    label: "Menghentikan…",
+  },
+  [STATUS.ERROR]: {
+    color: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300",
+    dot: "bg-red-500",
+    label: "Error",
+  },
+};
+
+// ─── Hooks ────────────────────────────────────────────────────
 
 function useTranslation() {
   const videoRef = useRef(null);
@@ -32,7 +65,6 @@ function useTranslation() {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-
     if (wsRef.current) {
       wsRef.current.onclose = null;
       wsRef.current.onerror = null;
@@ -43,14 +75,10 @@ function useTranslation() {
 
   const cleanupCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-
+    if (videoRef.current) videoRef.current.srcObject = null;
     setIsCameraActive(false);
   }, []);
 
@@ -60,25 +88,18 @@ function useTranslation() {
   }, [cleanupWebSocket, cleanupCamera]);
 
   const sendFrame = useCallback(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ws = wsRef.current;
-
+    const video = videoRef.current,
+      canvas = canvasRef.current,
+      ws = wsRef.current;
     if (!video || !canvas || !ws || ws.readyState !== WebSocket.OPEN) return;
     if (video.readyState < 2) return;
 
     const ctx = canvas.getContext("2d");
-
     if (!ctx) return;
-
     canvas.width = 640;
     canvas.height = 480;
-
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const base64 = canvas.toDataURL("image/jpeg", 0.6).split(",")[1];
-
-    ws.send(base64);
+    ws.send(canvas.toDataURL("image/jpeg", 0.6).split(",")[1]);
   }, []);
 
   const start = useCallback(async () => {
@@ -89,15 +110,11 @@ function useTranslation() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
 
       streamRef.current = stream;
-
       stream.getVideoTracks().forEach((track) => {
         track.onended = () => {
           setErrorMsg("Kamera berhenti atau sedang digunakan aplikasi lain.");
@@ -125,36 +142,31 @@ function useTranslation() {
 
       ws.onmessage = (event) => {
         try {
-          const response = JSON.parse(event.data);
-
-          const prediction = response.data?.prediction;
-          const score = response.data?.confidence;
-          const isDetected = response.data?.is_detected;
-
-          if (isDetected && prediction) {
-            setTranslation(prediction);
-            setConfidence(score ?? null);
+          const { data } = JSON.parse(event.data);
+          if (data?.is_detected && data?.prediction) {
+            setTranslation(data.prediction);
+            setConfidence(data.confidence ?? null);
           } else {
             setTranslation("");
             setConfidence(null);
           }
         } catch {
-          if (event.data && String(event.data).trim()) {
-            setTranslation(String(event.data).trim());
+          const text = String(event.data).trim();
+          if (text) {
+            setTranslation(text);
             setConfidence(null);
           }
         }
       };
 
+      // onerror: hanya set pesan & status, biarkan onclose yang cleanup
       ws.onerror = () => {
         setErrorMsg("Koneksi ke server gagal. Kamera tetap aktif.");
         setStatus(STATUS.ERROR);
-        cleanupAll();
       };
 
       ws.onclose = (event) => {
         cleanupWebSocket();
-
         if (event.code !== 1000) {
           setErrorMsg(`Koneksi WebSocket terputus. Code: ${event.code}`);
           setStatus(STATUS.ERROR);
@@ -169,7 +181,6 @@ function useTranslation() {
           : err.name === "NotFoundError"
             ? "Kamera tidak ditemukan pada perangkat ini."
             : `Gagal mengakses kamera: ${err.message}`;
-
       setErrorMsg(msg);
       setStatus(STATUS.ERROR);
       cleanupAll();
@@ -179,16 +190,13 @@ function useTranslation() {
   const stop = useCallback(() => {
     setStatus(STATUS.STOPPING);
     cleanupAll();
-
     setStatus(STATUS.IDLE);
     setErrorMsg("");
     setTranslation("");
     setConfidence(null);
   }, [cleanupAll]);
 
-  useEffect(() => {
-    return () => cleanupAll();
-  }, [cleanupAll]);
+  useEffect(() => () => cleanupAll(), [cleanupAll]);
 
   return {
     videoRef,
@@ -205,41 +213,10 @@ function useTranslation() {
   };
 }
 
+// ─── Sub-components ───────────────────────────────────────────
+
 function StatusBadge({ status }) {
-  const config = {
-    [STATUS.IDLE]: {
-      color:
-        "bg-neutral-200 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300",
-      dot: "bg-neutral-400",
-      label: "Siap",
-    },
-    [STATUS.CONNECTING]: {
-      color:
-        "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
-      dot: "bg-yellow-400",
-      label: "Menghubungkan…",
-    },
-    [STATUS.ACTIVE]: {
-      color:
-        "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-      dot: "bg-green-500",
-      label: "Live",
-    },
-    [STATUS.STOPPING]: {
-      color:
-        "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300",
-      dot: "bg-neutral-400",
-      label: "Menghentikan…",
-    },
-    [STATUS.ERROR]: {
-      color: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300",
-      dot: "bg-red-500",
-      label: "Error",
-    },
-  };
-
-  const c = config[status] ?? config[STATUS.IDLE];
-
+  const c = STATUS_CONFIG[status] ?? STATUS_CONFIG[STATUS.IDLE];
   return (
     <span
       className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${c.color}`}
@@ -252,6 +229,41 @@ function StatusBadge({ status }) {
   );
 }
 
+function TranslationBox({ translation, confidence, dk }) {
+  const confidencePercent =
+    typeof confidence === "number" ? Math.round(confidence * 100) : null;
+  return (
+    <div
+      className={`w-full min-h-[58px] rounded-xl border px-4 py-3 flex items-center transition-all duration-300 ${
+        translation
+          ? dk.isDark
+            ? "border-blue-800 bg-blue-950/40"
+            : "border-blue-200 bg-blue-50"
+          : dk.isDark
+            ? "border-neutral-700 bg-neutral-800"
+            : "border-neutral-200 bg-neutral-50"
+      }`}
+    >
+      {translation ? (
+        <p className={`font-semibold text-base ${dk.textPrimary}`}>
+          {translation}
+          {confidencePercent !== null && (
+            <span className="ml-2 text-sm font-medium text-blue-600">
+              ({confidencePercent}%)
+            </span>
+          )}
+        </p>
+      ) : (
+        <p className={`${dk.textMuted} text-sm italic`}>
+          Terjemahannya akan muncul di sini...
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Main ──────────────────────────────────────────────────────
+
 export default function Translate() {
   const {
     videoRef,
@@ -263,14 +275,9 @@ export default function Translate() {
     start,
     stop,
     isCameraActive,
-    isActive,
     isLoading,
   } = useTranslation();
-
   const dk = useDarkMode();
-
-  const confidencePercent =
-    typeof confidence === "number" ? Math.round(confidence * 100) : null;
 
   return (
     <div
@@ -286,7 +293,6 @@ export default function Translate() {
         <h1 className="font-display font-extrabold text-white text-2xl leading-tight">
           Terjemah
         </h1>
-
         <p className="text-blue-100 text-sm mt-0.5">
           Sistem Isyarat Bahasa Indonesia
         </p>
@@ -296,31 +302,22 @@ export default function Translate() {
         <div
           className={`${dk.card} rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300`}
         >
+          {/* Card Header */}
           <div
-            className={`flex items-center justify-between px-4 py-3 border-b ${
-              dk.isDark ? "border-neutral-800" : "border-neutral-100"
-            }`}
+            className={`flex items-center justify-between px-4 py-3 border-b ${dk.isDark ? "border-neutral-800" : "border-neutral-100"}`}
           >
             <div className="flex items-center gap-2 text-primary-600">
               <Camera className="w-4 h-4" />
-
               <span className={`text-sm font-semibold ${dk.textPrimary}`}>
                 Terjemah dari Bahasa Isyarat ke Teks
               </span>
             </div>
-
             <StatusBadge status={status} />
           </div>
 
+          {/* Camera */}
           <div className="px-4 pt-4">
-            <div
-              className="
-                relative w-full mx-auto
-                h-[300px] sm:h-[340px] md:h-[360px]
-                max-w-[500px]
-                bg-neutral-900 rounded-2xl overflow-hidden
-              "
-            >
+            <div className="relative w-full mx-auto h-[300px] sm:h-[340px] md:h-[360px] max-w-[500px] bg-neutral-900 rounded-2xl overflow-hidden">
               <video
                 ref={videoRef}
                 autoPlay
@@ -329,13 +326,10 @@ export default function Translate() {
                 className="absolute inset-0 w-full h-full object-cover"
                 style={{ transform: "scaleX(-1)" }}
               />
-
               <canvas ref={canvasRef} className="hidden" />
-
               {!isCameraActive && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                   <Camera className="w-7 h-7 text-white" />
-
                   <p className="text-white/80 text-sm font-medium">
                     {isLoading ? "Membuka kamera…" : "Posisikan tangan di sini"}
                   </p>
@@ -353,50 +347,20 @@ export default function Translate() {
           )}
 
           <div className="px-4 py-3">
-            <div
-              className={`
-                w-full min-h-[58px] rounded-xl border px-4 py-3
-                flex items-center transition-all duration-300
-                ${
-                  translation
-                    ? dk.isDark
-                      ? "border-blue-800 bg-blue-950/40"
-                      : "border-blue-200 bg-blue-50"
-                    : dk.isDark
-                      ? "border-neutral-700 bg-neutral-800"
-                      : "border-neutral-200 bg-neutral-50"
-                }
-              `}
-            >
-              {translation ? (
-                <p className={`font-semibold text-base ${dk.textPrimary}`}>
-                  {translation}
-
-                  {confidencePercent !== null && (
-                    <span className="ml-2 text-sm font-medium text-blue-600">
-                      ({confidencePercent}%)
-                    </span>
-                  )}
-                </p>
-              ) : (
-                <p className={`${dk.textMuted} text-sm italic`}>
-                  Terjemahannya akan muncul di sini...
-                </p>
-              )}
-            </div>
+            <TranslationBox
+              translation={translation}
+              confidence={confidence}
+              dk={dk}
+            />
           </div>
         </div>
 
+        {/* Action Button */}
         {!isCameraActive ? (
           <button
             onClick={start}
             disabled={isLoading}
-            className="
-              w-full flex items-center justify-center gap-2.5
-              py-4 rounded-2xl font-semibold text-white text-sm
-              transition-all duration-200 active:scale-95
-              disabled:opacity-60 disabled:active:scale-100
-            "
+            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-semibold text-white text-sm transition-all duration-200 active:scale-95 disabled:opacity-60 disabled:active:scale-100"
             style={{
               background: "linear-gradient(135deg, #3F88FF 0%, #176AC3 100%)",
               boxShadow: "0 4px 16px rgba(23,106,195,0.4)",
@@ -404,29 +368,22 @@ export default function Translate() {
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="w-5 h-5 animate-spin" />
+                <LoaderCircle className="w-5 h-5 animate-spin" />{" "}
                 Menghubungkan...
               </>
             ) : (
               <>
-                <Languages className="w-5 h-5" />
-                Mulai Penerjemahan
+                <Languages className="w-5 h-5" /> Mulai Penerjemahan
               </>
             )}
           </button>
         ) : (
           <button
             onClick={stop}
-            className="
-              w-full flex items-center justify-center gap-2.5
-              py-4 rounded-2xl font-semibold text-white text-sm
-              transition-all duration-200 active:scale-95
-              bg-red-500 hover:bg-red-600
-            "
+            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-semibold text-white text-sm transition-all duration-200 active:scale-95 bg-red-500 hover:bg-red-600"
             style={{ boxShadow: "0 4px 16px rgba(239,68,68,0.35)" }}
           >
-            <Square className="w-4 h-4 fill-current" />
-            Akhiri Penerjemahan
+            <Square className="w-4 h-4 fill-current" /> Akhiri Penerjemahan
           </button>
         )}
       </div>

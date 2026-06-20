@@ -157,7 +157,7 @@ export default function Dictionary() {
             form={addForm}
             error={addError}
             isSubmitting={isSubmitting}
-            submitLabel="Simpan Kamus"
+            submitLabel="Simpan"
             loadingLabel="Menyimpan..."
             fileTitle="Upload Gambar"
             fileHint="Pilih gambar bahasa isyarat"

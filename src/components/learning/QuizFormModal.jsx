@@ -49,7 +49,7 @@ export default function QuizFormModal({
             name="title"
             value={form.title}
             onChange={handleChange}
-            placeholder="Judul paket belajar"
+            placeholder="Judul paket kuis"
             disabled={isSubmitting}
             className={`
               ${dk.input}
@@ -63,7 +63,7 @@ export default function QuizFormModal({
             name="description"
             value={form.description}
             onChange={handleChange}
-            placeholder="Deskripsi paket belajar"
+            placeholder="Deskripsi paket kuis"
             rows={3}
             disabled={isSubmitting}
             className={`

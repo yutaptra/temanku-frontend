@@ -1,13 +1,43 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import {
+  useNavigate,
+  useSearchParams,
+  Link,
+  useLocation,
+} from "react-router-dom";
 import { Eye, EyeOff, CircleX, CircleCheck, LoaderCircle } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import logo from "../assets/logo-temanku.svg";
 import api from "../services/api";
 
+const AUTH_BG_LIGHT = "linear-gradient(180deg, #F8FAFF 0%, #F0F4FF 100%)";
+const AUTH_BG_DARK = "linear-gradient(180deg, #0F172A 0%, #111827 100%)";
+const CARD_SHADOW_LIGHT =
+  "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 40px -8px rgba(59,125,255,0.12)";
+const CARD_SHADOW_DARK = "0 10px 30px rgba(0,0,0,0.35)";
+const BTN_GRADIENT = "linear-gradient(135deg, #176AC3 0%, #1F7DE3 100%)";
+
+const INPUT_CLASS = (isDark) => `
+  w-full px-4 py-3 rounded-xl border text-sm
+  outline-none transition-all duration-200 disabled:opacity-70
+  ${
+    isDark
+      ? "border-neutral-700 bg-neutral-800 text-white placeholder-neutral-500 focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20"
+      : "border-neutral-200 bg-neutral-50 text-neutral-800 placeholder-neutral-300 focus:border-primary-400 focus:bg-white focus:ring-2 focus:ring-primary-100"
+  }
+`;
+
+function validate(form) {
+  if (!form.email.trim()) return "Email tidak boleh kosong.";
+  if (!/\S+@\S+\.\S+/.test(form.email)) return "Format email tidak valid.";
+  if (!form.password) return "Kata sandi tidak boleh kosong.";
+  return null;
+}
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { state, dispatch } = useApp();
 
   const [form, setForm] = useState({ email: "", password: "" });
@@ -19,48 +49,47 @@ export default function Login() {
   const isDark = state.darkMode;
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("session") === "expired") {
+    if (searchParams.get("session") === "expired") {
       setError("Sesi login berakhir. Silakan masuk kembali.");
-      window.history.replaceState({}, "", "/login");
+      navigate("/login", { replace: true });
     }
+
     const successMessage = location.state?.successMessage;
     if (successMessage) {
       setSuccess(successMessage);
-      window.history.replaceState({}, "", "/login");
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state]);
+  }, [searchParams, location.state, navigate, location.pathname]);
 
-  function handleChange(e) {
+  const handleChange = (e) => {
     setError("");
     setSuccess("");
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  }
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    if (!form.email.trim()) return setError("Email tidak boleh kosong.");
-    if (!form.password) return setError("Kata sandi tidak boleh kosong.");
+    const validationError = validate(form);
+    if (validationError) return setError(validationError);
 
     setIsLoading(true);
 
     try {
-      const res = await api.post("/login", {
+      const { data } = await api.post("/login", {
         email: form.email.trim(),
         password: form.password,
       });
 
-      const data = res.data;
+      const token = data.result?.access_token;
 
-      if (String(data.code) !== "200") {
-        setError(data.message || "Email atau kata sandi salah.");
+      if (!token) {
+        setError(data.message || "Login gagal. Token tidak diterima.");
         return;
       }
 
-      const token = data.result?.access_token;
       const user = {
         id: data.result?.user?.id,
         name: data.result?.user?.full_name || form.email.trim(),
@@ -68,14 +97,9 @@ export default function Login() {
         role: data.result?.user?.role,
       };
 
-      if (!token) {
-        setError("Login berhasil, tetapi token tidak diterima dari server.");
-        return;
-      }
-
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
-      dispatch({ type: "LOGIN", payload: user });
+      dispatch({ type: "LOGIN", payload: { ...user, token } });
       navigate("/home", { replace: true });
     } catch (err) {
       console.error(err);
@@ -108,11 +132,7 @@ export default function Login() {
 
       <div
         className="min-h-screen w-full flex flex-col items-center justify-center px-5 py-8 transition-colors duration-300"
-        style={{
-          background: isDark
-            ? "linear-gradient(180deg, #0F172A 0%, #111827 100%)"
-            : "linear-gradient(180deg, #F8FAFF 0%, #F0F4FF 100%)",
-        }}
+        style={{ background: isDark ? AUTH_BG_DARK : AUTH_BG_LIGHT }}
       >
         {/* Logo */}
         <div
@@ -142,11 +162,7 @@ export default function Login() {
         >
           <div
             className={`rounded-3xl px-6 py-8 transition-colors duration-300 ${isDark ? "bg-neutral-900" : "bg-white"}`}
-            style={{
-              boxShadow: isDark
-                ? "0 10px 30px rgba(0,0,0,0.35)"
-                : "0 4px 6px -1px rgba(0,0,0,0.07), 0 20px 40px -8px rgba(59,125,255,0.12)",
-            }}
+            style={{ boxShadow: isDark ? CARD_SHADOW_DARK : CARD_SHADOW_LIGHT }}
           >
             <h1
               className={`font-bold text-xl text-center mb-6 ${isDark ? "text-white" : "text-neutral-800"}`}
@@ -159,6 +175,7 @@ export default function Login() {
               noValidate
               className="flex flex-col gap-4"
             >
+              {/* Email */}
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="email"
@@ -175,14 +192,11 @@ export default function Login() {
                   onChange={handleChange}
                   disabled={isLoading}
                   placeholder="Masukkan email"
-                  className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all duration-200 disabled:opacity-70 ${
-                    isDark
-                      ? "border-neutral-700 bg-neutral-800 text-white placeholder-neutral-500 focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20"
-                      : "border-neutral-200 bg-neutral-50 text-neutral-800 placeholder-neutral-300 focus:border-primary-400 focus:bg-white focus:ring-2 focus:ring-primary-100"
-                  }`}
+                  className={INPUT_CLASS(isDark)}
                 />
               </div>
 
+              {/* Password */}
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="password"
@@ -200,11 +214,7 @@ export default function Login() {
                     onChange={handleChange}
                     disabled={isLoading}
                     placeholder="Masukkan kata sandi"
-                    className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition-all duration-200 disabled:opacity-70 ${
-                      isDark
-                        ? "border-neutral-700 bg-neutral-800 text-white placeholder-neutral-500 focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20"
-                        : "border-neutral-200 bg-neutral-50 text-neutral-800 placeholder-neutral-300 focus:border-primary-400 focus:bg-white focus:ring-2 focus:ring-primary-100"
-                    }`}
+                    className={`${INPUT_CLASS(isDark)} pr-11`}
                   />
                   <button
                     type="button"
@@ -255,8 +265,7 @@ export default function Login() {
                 disabled={isLoading}
                 className="w-full py-3.5 rounded-xl font-semibold text-white text-sm transition-all duration-200 active:scale-95 mt-1 disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
                 style={{
-                  background:
-                    "linear-gradient(135deg, #176AC3 0%, #1F7DE3 100%)",
+                  background: BTN_GRADIENT,
                   boxShadow: isLoading
                     ? "none"
                     : "0 4px 14px rgba(23,106,195,0.4)",
@@ -264,7 +273,7 @@ export default function Login() {
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">
-                    <LoaderCircle className="animate-spin w-4 h-4" />
+                    <LoaderCircle className="animate-spin w-4 h-4" />{" "}
                     Memproses...
                   </span>
                 ) : (
