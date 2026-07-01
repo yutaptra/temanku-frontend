@@ -4,7 +4,7 @@ import {
   ClipboardList,
   FileQuestion,
   GraduationCap,
-  Lightbulb,
+  FileText,
   ScanSearch,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
@@ -15,26 +15,16 @@ import { useDictionary } from "../hooks/useDictionary";
 const QUICK_ACTIONS = [
   {
     id: "translate",
-    label: "Mulai Terjemah",
-    desc: "Gunakan kamera untuk menerjemahkan isyarat",
+    label: "Terjemahkan Isyarat",
+    desc: "Gunakan kamera untuk menerjemahkan bahasa isyarat secara langsung.",
     to: "/translate",
     icon: ScanSearch,
   },
-  {
-    id: "dictionary",
-    label: "Jelajahi Kamus",
-    desc: "Lihat alfabet dan kosakata SIBI",
-    to: "/dictionary",
-    icon: BookOpen,
-  },
-  {
-    id: "learning",
-    label: "Latihan SIBI",
-    desc: "Belajar dan kerjakan soal latihan",
-    to: "/learning",
-    icon: GraduationCap,
-  },
 ];
+
+// TODO: ganti dengan link Google Drive setelah Buku Panduan Aplikasi TEMANKU dibuat
+const PANDUAN_URL =
+  "https://drive.google.com/file/d/1HCHwnSw_Q8bBB6ev12VVxxRCxM-In84S/view?usp=sharing";
 
 function StatCard({ icon, value, label }) {
   return (
@@ -136,24 +126,25 @@ export default function Home() {
                 key={action.id}
                 type="button"
                 onClick={() => navigate(action.to)}
-                className={`${dk.card} border w-full flex items-center gap-3 p-4 rounded-2xl text-left active:scale-[0.98] transition-all duration-150 shadow-sm`}
+                className={`${dk.card} border w-full flex items-center gap-4 p-5 rounded-3xl text-left active:scale-[0.98] transition-all duration-150 shadow-sm hover:shadow-md`}
               >
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
                   style={{
                     background: "linear-gradient(145deg,#3B7DFF,#1A5FE8)",
-                    boxShadow: "0 4px 14px rgba(59,125,255,0.28)",
+                    boxShadow: "0 6px 18px rgba(59,125,255,0.30)",
                   }}
                 >
-                  <action.icon className="w-6 h-6 text-white" strokeWidth={2} />
+                  <action.icon className="w-7 h-7 text-white" strokeWidth={2} />
                 </div>
 
-                <div className="min-w-0">
-                  <p className={`font-bold ${dk.textPrimary} text-sm`}>
+                <div className="min-w-0 flex-1">
+                  <p className={`font-bold ${dk.textPrimary} text-base`}>
                     {action.label}
                   </p>
+
                   <p
-                    className={`${dk.textSecondary} text-xs leading-relaxed mt-0.5`}
+                    className={`${dk.textSecondary} text-sm leading-relaxed mt-1`}
                   >
                     {action.desc}
                   </p>
@@ -164,26 +155,26 @@ export default function Home() {
         </section>
 
         <section className="px-4">
-          <div
-            className={`${dk.card} border rounded-3xl p-4 flex gap-3 items-start shadow-sm`}
+          <a
+            href={PANDUAN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${dk.card} border rounded-3xl p-4 flex gap-3 items-start shadow-sm active:scale-[0.98] transition-all duration-150`}
           >
-            <div className="w-10 h-10 rounded-2xl bg-yellow-100 flex items-center justify-center shrink-0">
-              <Lightbulb
-                className="w-5 h-5 text-yellow-500"
-                strokeWidth={2.3}
-              />
+            <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
+              <FileText className="w-5 h-5 text-blue-500" strokeWidth={2.3} />
             </div>
 
             <div>
               <h3 className={`font-bold ${dk.textPrimary} text-sm mb-1`}>
-                Tips Terjemah
+                Baca Panduan
               </h3>
               <p className={`${dk.textSecondary} text-xs leading-relaxed`}>
-                Gunakan kamera di tempat terang dan pastikan tangan terlihat
-                jelas agar hasil deteksi lebih akurat.
+                Pelajari cara menggunakan TEMANKU lebih lengkap lewat Buku
+                Panduan Aplikasi.
               </p>
             </div>
-          </div>
+          </a>
         </section>
       </div>
     </div>

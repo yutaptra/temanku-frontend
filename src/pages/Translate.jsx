@@ -1,4 +1,10 @@
-import { Camera, Languages, Square, LoaderCircle } from "lucide-react";
+import {
+  Camera,
+  Languages,
+  Square,
+  LoaderCircle,
+  Lightbulb,
+} from "lucide-react";
 import { useDarkMode } from "../hooks/useDarkMode";
 import { useTranslation, STATUS } from "../hooks/useTranslation";
 
@@ -171,6 +177,24 @@ export default function Translate() {
               confidence={confidence}
               dk={dk}
             />
+          </div>
+        </div>
+
+        <div
+          className={`${dk.card} border rounded-3xl p-4 flex gap-3 items-start shadow-sm`}
+        >
+          <div className="w-10 h-10 rounded-2xl bg-yellow-100 flex items-center justify-center shrink-0">
+            <Lightbulb className="w-5 h-5 text-yellow-500" strokeWidth={2.3} />
+          </div>
+
+          <div>
+            <h3 className={`font-bold ${dk.textPrimary} text-sm mb-1`}>
+              Tips Terjemah
+            </h3>
+            <p className={`${dk.textSecondary} text-xs leading-relaxed`}>
+              Gunakan kamera di tempat terang dan pastikan tangan terlihat jelas
+              agar hasil deteksi lebih akurat.
+            </p>
           </div>
         </div>
 
