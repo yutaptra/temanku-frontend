@@ -130,7 +130,9 @@ export default function Translate() {
           className={`${dk.card} rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300`}
         >
           <div
-            className={`flex items-center justify-between px-4 py-3 border-b ${dk.isDark ? "border-neutral-800" : "border-neutral-100"}`}
+            className={`flex items-center justify-between px-4 py-3 border-b ${
+              dk.isDark ? "border-neutral-800" : "border-neutral-100"
+            }`}
           >
             <div className="flex items-center gap-2 text-primary-600">
               <Camera className="w-4 h-4" />
@@ -152,6 +154,7 @@ export default function Translate() {
                 style={{ transform: "scaleX(-1)" }}
               />
               <canvas ref={canvasRef} className="hidden" />
+
               {!isCameraActive && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                   <Camera className="w-7 h-7 text-white" />
@@ -180,24 +183,6 @@ export default function Translate() {
           </div>
         </div>
 
-        <div
-          className={`${dk.card} border rounded-3xl p-4 flex gap-3 items-start shadow-sm`}
-        >
-          <div className="w-10 h-10 rounded-2xl bg-yellow-100 flex items-center justify-center shrink-0">
-            <Lightbulb className="w-5 h-5 text-yellow-500" strokeWidth={2.3} />
-          </div>
-
-          <div>
-            <h3 className={`font-bold ${dk.textPrimary} text-sm mb-1`}>
-              Tips Terjemah
-            </h3>
-            <p className={`${dk.textSecondary} text-xs leading-relaxed`}>
-              Gunakan kamera di tempat terang dan pastikan tangan terlihat jelas
-              agar hasil deteksi lebih akurat.
-            </p>
-          </div>
-        </div>
-
         {!isCameraActive ? (
           <button
             onClick={start}
@@ -210,12 +195,13 @@ export default function Translate() {
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="w-5 h-5 animate-spin" />{" "}
+                <LoaderCircle className="w-5 h-5 animate-spin" />
                 Menghubungkan...
               </>
             ) : (
               <>
-                <Languages className="w-5 h-5" /> Mulai Penerjemahan
+                <Languages className="w-5 h-5" />
+                Mulai Penerjemahan
               </>
             )}
           </button>
@@ -223,11 +209,33 @@ export default function Translate() {
           <button
             onClick={stop}
             className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-semibold text-white text-sm transition-all duration-200 active:scale-95 bg-red-500 hover:bg-red-600"
-            style={{ boxShadow: "0 4px 16px rgba(239,68,68,0.35)" }}
+            style={{
+              boxShadow: "0 4px 16px rgba(239,68,68,0.35)",
+            }}
           >
-            <Square className="w-4 h-4 fill-current" /> Akhiri Penerjemahan
+            <Square className="w-4 h-4 fill-current" />
+            Akhiri Penerjemahan
           </button>
         )}
+
+        <div
+          className={`${dk.card} border rounded-3xl p-4 flex gap-3 items-start shadow-sm`}
+        >
+          <div className="w-10 h-10 rounded-2xl bg-yellow-100 flex items-center justify-center shrink-0">
+            <Lightbulb className="w-5 h-5 text-yellow-500" strokeWidth={2.3} />
+          </div>
+
+          <div>
+            <h3 className={`font-bold ${dk.textPrimary} text-sm mb-1`}>
+              Tips Terjemah
+            </h3>
+
+            <p className={`${dk.textSecondary} text-xs leading-relaxed`}>
+              Gunakan kamera di tempat terang dan pastikan tangan terlihat jelas
+              agar hasil deteksi lebih akurat.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

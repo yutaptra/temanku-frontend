@@ -24,7 +24,7 @@ const QUICK_ACTIONS = [
 
 // TODO: ganti dengan link Google Drive setelah Buku Panduan Aplikasi TEMANKU dibuat
 const PANDUAN_URL =
-  "https://drive.google.com/file/d/1HCHwnSw_Q8bBB6ev12VVxxRCxM-In84S/view?usp=sharing";
+  "https://drive.google.com/file/d/1vG-bMCW_Gq3dIfrzBoFCKuHlm8k7JSr_/view?usp=sharing";
 
 function StatCard({ icon, value, label }) {
   return (
