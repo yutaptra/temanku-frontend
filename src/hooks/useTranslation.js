@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const API_PREDICT_URL = import.meta.env.VITE_API_PREDICT_URL;
+const API_PREDICT_URL = `${import.meta.env.VITE_API_BASE_URL}/predict/`;
 const FRAME_INTERVAL_MS = 500;
 
 export const STATUS = {
@@ -82,11 +82,9 @@ export function useTranslation() {
 
       const data = await res.json();
 
-      // TODO: sesuaikan dengan struktur response asli dari tim backend.
-      // Asumsi sementara: { is_detected, prediction, confidence }
-      if (data?.is_detected && data?.prediction) {
-        setTranslation(data.prediction);
-        setConfidence(data.confidence ?? null);
+      if (data?.success && data?.prediction?.label) {
+        setTranslation(data.prediction.label);
+        setConfidence(data.prediction.confidence ?? null);
       } else {
         setTranslation("");
         setConfidence(null);
