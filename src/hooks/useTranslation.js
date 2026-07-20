@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const WS_URL = import.meta.env.VITE_WS_PREDICT_URL;
+const API_PREDICT_URL = import.meta.env.VITE_API_PREDICT_URL;
 const FRAME_INTERVAL_MS = 500;
 
 export const STATUS = {
@@ -14,9 +14,10 @@ export const STATUS = {
 export function useTranslation() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const wsRef = useRef(null);
   const streamRef = useRef(null);
-  const intervalRef = useRef(null);
+  const loopTimeoutRef = useRef(null);
+  const isSendingRef = useRef(false);
+  const isRunningRef = useRef(false); // guard untuk stop loop async
 
   const [status, setStatus] = useState(STATUS.IDLE);
   const [translation, setTranslation] = useState("");
@@ -24,16 +25,11 @@ export function useTranslation() {
   const [confidence, setConfidence] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
 
-  const cleanupWebSocket = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    if (wsRef.current) {
-      wsRef.current.onclose = null;
-      wsRef.current.onerror = null;
-      wsRef.current.close();
-      wsRef.current = null;
+  const cleanupLoop = useCallback(() => {
+    isRunningRef.current = false;
+    if (loopTimeoutRef.current) {
+      clearTimeout(loopTimeoutRef.current);
+      loopTimeoutRef.current = null;
     }
   }, []);
 
@@ -47,16 +43,17 @@ export function useTranslation() {
   }, []);
 
   const cleanupAll = useCallback(() => {
-    cleanupWebSocket();
+    cleanupLoop();
     cleanupCamera();
-  }, [cleanupWebSocket, cleanupCamera]);
+  }, [cleanupLoop, cleanupCamera]);
 
-  const sendFrame = useCallback(() => {
-    const video = videoRef.current,
-      canvas = canvasRef.current,
-      ws = wsRef.current;
-    if (!video || !canvas || !ws || ws.readyState !== WebSocket.OPEN) return;
+  // Ambil 1 frame dari video, convert ke Blob, POST ke /ml/predict
+  const sendFrame = useCallback(async () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
     if (video.readyState < 2) return;
+    if (isSendingRef.current) return; // hindari request menumpuk
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -64,8 +61,55 @@ export function useTranslation() {
     canvas.height = 240;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    ws.send(canvas.toDataURL("image/jpeg", 0.4).split(",")[1]);
-  }, []);
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.4),
+    );
+    if (!blob) return;
+
+    isSendingRef.current = true;
+    try {
+      const formData = new FormData();
+      formData.append("file", blob, "frame.jpg");
+
+      const res = await fetch(API_PREDICT_URL, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server merespons dengan status ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // TODO: sesuaikan dengan struktur response asli dari tim backend.
+      // Asumsi sementara: { is_detected, prediction, confidence }
+      if (data?.is_detected && data?.prediction) {
+        setTranslation(data.prediction);
+        setConfidence(data.confidence ?? null);
+      } else {
+        setTranslation("");
+        setConfidence(null);
+      }
+
+      if (status !== STATUS.ACTIVE) setStatus(STATUS.ACTIVE);
+    } catch (err) {
+      setErrorMsg(`Gagal menghubungi server prediksi: ${err.message}`);
+      setStatus(STATUS.ERROR);
+    } finally {
+      isSendingRef.current = false;
+    }
+  }, [status]);
+
+  // Loop kirim frame tiap FRAME_INTERVAL_MS, menunggu response sebelum jadwalkan berikutnya
+  const runLoop = useCallback(() => {
+    if (!isRunningRef.current) return;
+    sendFrame().finally(() => {
+      if (isRunningRef.current) {
+        loopTimeoutRef.current = setTimeout(runLoop, FRAME_INTERVAL_MS);
+      }
+    });
+  }, [sendFrame]);
 
   const start = useCallback(async () => {
     setErrorMsg("");
@@ -96,48 +140,10 @@ export function useTranslation() {
       }
 
       setIsCameraActive(true);
+      setStatus(STATUS.ACTIVE);
 
-      const ws = new WebSocket(WS_URL);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        setStatus(STATUS.ACTIVE);
-        intervalRef.current = setInterval(sendFrame, FRAME_INTERVAL_MS);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const { data } = JSON.parse(event.data);
-          if (data?.is_detected && data?.prediction) {
-            setTranslation(data.prediction);
-            setConfidence(data.confidence ?? null);
-          } else {
-            setTranslation("");
-            setConfidence(null);
-          }
-        } catch {
-          const text = String(event.data).trim();
-          if (text) {
-            setTranslation(text);
-            setConfidence(null);
-          }
-        }
-      };
-
-      ws.onerror = () => {
-        setErrorMsg("Koneksi ke server gagal. Kamera tetap aktif.");
-        setStatus(STATUS.ERROR);
-      };
-
-      ws.onclose = (event) => {
-        cleanupWebSocket();
-        if (event.code !== 1000) {
-          setErrorMsg(`Koneksi WebSocket terputus. Code: ${event.code}`);
-          setStatus(STATUS.ERROR);
-        } else {
-          setStatus(STATUS.IDLE);
-        }
-      };
+      isRunningRef.current = true;
+      runLoop();
     } catch (err) {
       const msg =
         err.name === "NotAllowedError"
@@ -149,7 +155,7 @@ export function useTranslation() {
       setStatus(STATUS.ERROR);
       cleanupAll();
     }
-  }, [sendFrame, cleanupWebSocket, cleanupAll]);
+  }, [runLoop, cleanupAll]);
 
   const stop = useCallback(() => {
     setStatus(STATUS.STOPPING);
