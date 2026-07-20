@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_PREDICT_URL = import.meta.env.VITE_API_PREDICT_URL;
 const FRAME_INTERVAL_MS = 500;
 
 export const STATUS = {
@@ -71,7 +71,7 @@ export function useTranslation() {
       const formData = new FormData();
       formData.append("file", blob, "frame.jpg");
 
-      const res = await fetch(`${API_BASE_URL}/predict/`, {
+      const res = await fetch(`${API_PREDICT_URL}`, {
         method: "POST",
         body: formData,
       });
