@@ -82,9 +82,12 @@ export function useTranslation() {
 
       const data = await res.json();
 
-      if (data?.success && data?.prediction?.label) {
-        setTranslation(data.prediction.label);
-        setConfidence(data.prediction.confidence ?? null);
+      if (data?.success && data?.prediction) {
+        const pred = data.prediction;
+        const label = typeof pred === "object" ? pred.label : pred;
+        const conf = typeof pred === "object" ? pred.confidence : null;
+        setTranslation(label ?? "");
+        setConfidence(conf ?? null);
       } else {
         setTranslation("");
         setConfidence(null);
